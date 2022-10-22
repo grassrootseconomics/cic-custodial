@@ -1,0 +1,21 @@
+[service]
+debug = true
+address = ":5000"
+
+[chain]
+endpoint = "https://rpc.sarafu.network"
+
+[admin]
+public = "0x28Daa9bA426383fA0296A669Af13f3EeF57A2877"
+key = "c7f7e36c62a1ecfc4fba508421919c6449e7dced0ea846ce00fe3e93a9aaa608"
+
+[tasker]
+dsn = "127.0.0.1:6379"
+
+[keystore]
+provider = "postgres"
+dsn = "postgres://postgres:postgres@localhost:5432/cic_custodial"
+
+[noncestore]
+provider = "redis"
+dsn = "127.0.0.1:6379"

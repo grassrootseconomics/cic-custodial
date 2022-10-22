@@ -1,0 +1,29 @@
+services:
+  redis:
+    image: redis:6-alpine
+    restart: unless-stopped
+    network_mode: "host"
+    command: redis-server --loglevel warning
+    ports:
+      - '6379:6379'
+  postgres:
+    image: postgres:14-alpine
+    restart: unless-stopped
+    network_mode: "host"
+    environment:
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_DB=cic_custodial
+    volumes:
+      - cic-custodial:/var/lib/postgresql/data
+    ports:
+      - '5432:5432'
+  asynqmon:
+    image: hibiken/asynqmon
+    restart: unless-stopped
+    network_mode: "host"
+    ports:
+      - '8080:8080'      
+volumes:
+  cic-custodial:
+    driver: local
