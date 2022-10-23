@@ -9,7 +9,7 @@ require (
 	github.com/grassrootseconomics/cic-go-sdk v0.2.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/jackc/pgx/v5 v5.0.1
-	github.com/knadh/koanf v1.4.3
+	github.com/knadh/koanf v1.4.4
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/lmittmann/w3 v0.10.0
 	github.com/zerodha/logf v0.5.5
