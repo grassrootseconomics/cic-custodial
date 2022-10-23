@@ -10,7 +10,7 @@ require (
 	github.com/hibiken/asynq v0.23.0
 	github.com/jackc/pgx/v5 v5.0.1
 	github.com/knadh/koanf v1.4.3
-	github.com/labstack/echo/v4 v4.9.0
+	github.com/labstack/echo/v4 v4.9.1
 	github.com/lmittmann/w3 v0.10.0
 	github.com/zerodha/logf v0.5.5
 )
@@ -36,7 +36,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
 	github.com/jackc/puddle/v2 v2.0.0 // indirect
-	github.com/labstack/gommon v0.3.1 // indirect
+	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
