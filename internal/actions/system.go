@@ -15,9 +15,14 @@ const (
 )
 
 func (ap *ActionsProvider) SignGiftGasTx(ctx context.Context, giftTo string) (*types.Transaction, error) {
-	builtTx, err := ap.ChainProvider.BuildGasTransferTx(ap.SystemProvider.SystemPrivateKey, chain.TransactionData{
+	nonce, err := ap.Noncestore.Acquire(ctx, ap.SystemPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	builtTx, err := ap.ChainProvider.BuildGasTransferTx(ap.SystemPrivateKey, chain.TransactionData{
 		To:    w3.A(giftTo),
-		Nonce: ap.SystemProvider.SystemNoncestore.Acquire(),
+		Nonce: nonce,
 	}, big.NewInt(initialGiftGasValue))
 	if err != nil {
 		return &types.Transaction{}, err
@@ -27,9 +32,14 @@ func (ap *ActionsProvider) SignGiftGasTx(ctx context.Context, giftTo string) (*t
 }
 
 func (ap *ActionsProvider) SignTopUpGasTx(ctx context.Context, giftTo string) (*types.Transaction, error) {
-	builtTx, err := ap.ChainProvider.BuildGasTransferTx(ap.SystemProvider.SystemPrivateKey, chain.TransactionData{
+	nonce, err := ap.Noncestore.Acquire(ctx, ap.SystemPublicKey)
+	if err != nil {
+		return nil, err
+	}
+
+	builtTx, err := ap.ChainProvider.BuildGasTransferTx(ap.SystemPrivateKey, chain.TransactionData{
 		To:    w3.A(giftTo),
-		Nonce: ap.SystemProvider.SystemNoncestore.Acquire(),
+		Nonce: nonce,
 	}, big.NewInt(topupGiftGasValue))
 	if err != nil {
 		return &types.Transaction{}, err

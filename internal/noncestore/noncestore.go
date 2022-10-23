@@ -10,10 +10,3 @@ type Noncestore interface {
 	SyncNetworkNonce(context.Context, string) (uint64, error)
 	SetNewAccountNonce(context.Context, string) error
 }
-
-// SystemNoncestore represents a standalone noncestore for a single system account
-type SystemNoncestore interface {
-	Peek() uint64
-	Acquire() uint64
-	Return()
-}

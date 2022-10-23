@@ -8,7 +8,6 @@ import (
 	postgres_keystore "github.com/grassrootseconomics/cic-custodial/internal/keystore/providers/postgres"
 	"github.com/grassrootseconomics/cic-custodial/internal/noncestore"
 	redis_noncestore "github.com/grassrootseconomics/cic-custodial/internal/noncestore/providers/redis"
-	system_provider "github.com/grassrootseconomics/cic-custodial/internal/system"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	"github.com/grassrootseconomics/cic-go-sdk/chain"
 	"github.com/knadh/koanf"
@@ -63,19 +62,6 @@ func initChainProvider() *chain.Provider {
 
 	lo.Debug("successfully parsed kitabu rpc endpoint")
 	return provider
-}
-
-func initSystemProvider() *system_provider.SystemProvider {
-	systemProvider, err := system_provider.NewSystemProvider(system_provider.Opts{
-		SystemPublicKey:  ko.MustString("admin.public"),
-		SystemPrivateKey: ko.MustString("admin.key"),
-		ChainProvider:    chainProvider,
-	})
-	if err != nil {
-		lo.Fatal("initSystemProvider", "error", err)
-	}
-
-	return systemProvider
 }
 
 func initTaskerClient() *tasker_client.TaskerClient {

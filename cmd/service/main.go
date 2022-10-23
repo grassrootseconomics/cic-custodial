@@ -42,12 +42,17 @@ func main() {
 
 	taskerClient = initTaskerClient()
 
-	actionsProvider := actions.NewActionsProvider(actions.Opts{
-		SystemProvider: initSystemProvider(),
-		ChainProvider:  chainProvider,
-		Keystore:       initKeystore(),
-		Noncestore:     initNoncestore(),
+	actionsProvider, err := actions.NewActionsProvider(actions.Opts{
+		SystemPublicKey:  ko.MustString("admin.public"),
+		SystemPrivateKey: ko.MustString("admin.key"),
+		ChainProvider:    chainProvider,
+		Keystore:         initKeystore(),
+		Noncestore:       initNoncestore(),
+		Logger:           lo,
 	})
+	if err != nil {
+		lo.Fatal("initActionsProvider", "err", err)
+	}
 
 	httpServer = api.BootstrapHTTPServer(api.Opts{
 		ActionsProvider: actionsProvider,

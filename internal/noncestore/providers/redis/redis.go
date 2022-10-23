@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	mutexLockTTL = 200 * time.Millisecond
+	mutexLockTTL   = 200 * time.Millisecond
+	mutexKeyPrefix = "lock_"
 )
 
 // Opts represents the Redis nonce store specific params
@@ -52,7 +53,7 @@ func NewRedisNoncestore(o Opts) (noncestore.Noncestore, error) {
 }
 
 func (ns *RedisNoncestore) Peek(ctx context.Context, publicKey string) (uint64, error) {
-	lock, err := ns.redisLockProvider.Obtain(ctx, publicKey, mutexLockTTL, nil)
+	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -71,7 +72,7 @@ func (ns *RedisNoncestore) Acquire(ctx context.Context, publicKey string) (uint6
 		nonce uint64
 	)
 
-	lock, err := ns.redisLockProvider.Obtain(ctx, publicKey, mutexLockTTL, nil)
+	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -98,7 +99,7 @@ func (ns *RedisNoncestore) Acquire(ctx context.Context, publicKey string) (uint6
 }
 
 func (ns *RedisNoncestore) Return(ctx context.Context, publicKey string) (uint64, error) {
-	lock, err := ns.redisLockProvider.Obtain(ctx, publicKey, mutexLockTTL, nil)
+	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -124,7 +125,7 @@ func (ns *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey strin
 		networkNonce uint64
 	)
 
-	lock, err := ns.redisLockProvider.Obtain(ctx, publicKey, mutexLockTTL, nil)
+	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
 	if err != nil {
 		return 0, err
 	}
@@ -147,7 +148,7 @@ func (ns *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey strin
 }
 
 func (ns *RedisNoncestore) SetNewAccountNonce(ctx context.Context, publicKey string) error {
-	lock, err := ns.redisLockProvider.Obtain(ctx, publicKey, mutexLockTTL, nil)
+	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
 	if err != nil {
 		return err
 	}
