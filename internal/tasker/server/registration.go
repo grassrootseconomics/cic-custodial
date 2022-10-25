@@ -39,6 +39,12 @@ func (tp *TaskerProcessor) giftGasProcessor(ctx context.Context, t *asynq.Task) 
 		return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 	}
 
+	lock, err := tp.LockProvider.Obtain(ctx, tp.ActionsProvider.SystemPublicKey, LockTTL, nil)
+	if err != nil {
+		return err
+	}
+	defer lock.Release(ctx)
+
 	signedTx, err := tp.ActionsProvider.SignGiftGasTx(ctx, p.PublicKey)
 	if err != nil {
 		return err

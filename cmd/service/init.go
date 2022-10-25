@@ -66,7 +66,7 @@ func initChainProvider() *chain.Provider {
 
 func initTaskerClient() *tasker_client.TaskerClient {
 	return tasker_client.NewTaskerClient(tasker_client.Opts{
-		RedisDSN: ko.MustString("tasker.dsn"),
+		RedisDSN: ko.MustString("redis.dsn"),
 	})
 }
 
@@ -93,10 +93,10 @@ func initNoncestore() noncestore.Noncestore {
 	switch provider := ko.MustString("noncestore.provider"); provider {
 	case "redis":
 		redisNoncestore, err := redis_noncestore.NewRedisNoncestore(redis_noncestore.Opts{
-			RedisDSN:      ko.MustString("noncestore.dsn"),
+			RedisDSN:      ko.MustString("redis.dsn"),
 			RedisDB:       2,
-			MinIdleConns:  8,
-			PoolSize:      15,
+			MinIdleConns:  5,
+			PoolSize:      10,
 			ChainProvider: chainProvider,
 		})
 		if err != nil {

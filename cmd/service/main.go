@@ -60,11 +60,14 @@ func main() {
 	})
 
 	taskerServer = tasker_server.NewTaskerServer(tasker_server.Opts{
-		ActionsProvider: actionsProvider,
-		TaskerClient:    taskerClient,
-		RedisDSN:        ko.MustString("tasker.dsn"),
-		Concurrency:     15,
-		Logger:          lo,
+		ActionsProvider:       actionsProvider,
+		TaskerClient:          taskerClient,
+		RedisDSN:              ko.MustString("redis.dsn"),
+		Concurrency:           15,
+		Logger:                lo,
+		RedisLockDB:           1,
+		RedisLockMinIdleConns: 3,
+		RedisLockPoolSize:     6,
 	})
 
 	var wg sync.WaitGroup

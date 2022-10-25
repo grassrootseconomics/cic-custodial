@@ -6,10 +6,10 @@ address = ":5000"
 endpoint = "https://rpc.sarafu.network"
 
 [admin]
-public = "0x28Daa9bA426383fA0296A669Af13f3EeF57A2877"
-key = "c7f7e36c62a1ecfc4fba508421919c6449e7dced0ea846ce00fe3e93a9aaa608"
+public = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
+key = "a6af6c597c614e3c8ee4b7638ab7c3f737aece3773a5413ca8caf4338e6b06d1"
 
-[tasker]
+[redis]
 dsn = "127.0.0.1:6379"
 
 [keystore]
@@ -18,4 +18,3 @@ dsn = "postgres://postgres:postgres@localhost:5432/cic_custodial"
 
 [noncestore]
 provider = "redis"
-dsn = "127.0.0.1:6379"

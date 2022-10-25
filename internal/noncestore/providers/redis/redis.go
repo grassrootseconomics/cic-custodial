@@ -2,19 +2,12 @@ package redis
 
 import (
 	"context"
-	"time"
 
-	"github.com/bsm/redislock"
 	"github.com/go-redis/redis/v8"
 	"github.com/grassrootseconomics/cic-custodial/internal/noncestore"
 	"github.com/grassrootseconomics/cic-go-sdk/chain"
 	"github.com/lmittmann/w3"
 	"github.com/lmittmann/w3/module/eth"
-)
-
-const (
-	mutexLockTTL   = 200 * time.Millisecond
-	mutexKeyPrefix = "lock_"
 )
 
 // Opts represents the Redis nonce store specific params
@@ -28,9 +21,8 @@ type Opts struct {
 
 // RedisNoncestore implements `noncestore.Noncestore`
 type RedisNoncestore struct {
-	redisLockProvider *redislock.Client
-	chainProvider     *chain.Provider
-	redis             *redis.Client
+	chainProvider *chain.Provider
+	redis         *redis.Client
 }
 
 func NewRedisNoncestore(o Opts) (noncestore.Noncestore, error) {
@@ -46,19 +38,12 @@ func NewRedisNoncestore(o Opts) (noncestore.Noncestore, error) {
 	}
 
 	return &RedisNoncestore{
-		redisLockProvider: redislock.New(redisClient),
-		redis:             redisClient,
-		chainProvider:     o.ChainProvider,
+		redis:         redisClient,
+		chainProvider: o.ChainProvider,
 	}, nil
 }
 
 func (ns *RedisNoncestore) Peek(ctx context.Context, publicKey string) (uint64, error) {
-	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
-	if err != nil {
-		return 0, err
-	}
-	defer lock.Release(ctx)
-
 	nonce, err := ns.redis.Get(ctx, publicKey).Uint64()
 	if err != nil {
 		return 0, err
@@ -72,13 +57,7 @@ func (ns *RedisNoncestore) Acquire(ctx context.Context, publicKey string) (uint6
 		nonce uint64
 	)
 
-	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
-	if err != nil {
-		return 0, err
-	}
-	defer lock.Release(ctx)
-
-	nonce, err = ns.redis.Get(ctx, publicKey).Uint64()
+	nonce, err := ns.redis.Get(ctx, publicKey).Uint64()
 	if err == redis.Nil {
 		networkNonce, err := ns.SyncNetworkNonce(ctx, publicKey)
 		if err != nil {
@@ -99,12 +78,6 @@ func (ns *RedisNoncestore) Acquire(ctx context.Context, publicKey string) (uint6
 }
 
 func (ns *RedisNoncestore) Return(ctx context.Context, publicKey string) (uint64, error) {
-	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
-	if err != nil {
-		return 0, err
-	}
-	defer lock.Release(ctx)
-
 	nonce, err := ns.redis.Get(ctx, publicKey).Uint64()
 	if err != nil {
 		return 0, err
@@ -125,13 +98,7 @@ func (ns *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey strin
 		networkNonce uint64
 	)
 
-	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
-	if err != nil {
-		return 0, err
-	}
-	defer lock.Release(ctx)
-
-	err = ns.chainProvider.EthClient.CallCtx(
+	err := ns.chainProvider.EthClient.CallCtx(
 		ctx,
 		eth.Nonce(w3.A(publicKey), nil).Returns(&networkNonce),
 	)
@@ -148,13 +115,7 @@ func (ns *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey strin
 }
 
 func (ns *RedisNoncestore) SetNewAccountNonce(ctx context.Context, publicKey string) error {
-	lock, err := ns.redisLockProvider.Obtain(ctx, mutexKeyPrefix+publicKey, mutexLockTTL, nil)
-	if err != nil {
-		return err
-	}
-	defer lock.Release(ctx)
-
-	err = ns.redis.Set(ctx, publicKey, 0, 0).Err()
+	err := ns.redis.Set(ctx, publicKey, 0, 0).Err()
 	if err != nil {
 		return err
 	}

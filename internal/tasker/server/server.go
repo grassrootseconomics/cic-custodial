@@ -4,21 +4,30 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
+	"github.com/go-redis/redis/v8"
 	"github.com/grassrootseconomics/cic-custodial/internal/actions"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	"github.com/hibiken/asynq"
 	"github.com/zerodha/logf"
 )
 
+const (
+	LockTTL = 1 * time.Second
+)
+
 type Opts struct {
-	ActionsProvider *actions.ActionsProvider
-	TaskerClient    *tasker_client.TaskerClient
-	RedisDSN        string
-	Concurrency     int
-	Logger          logf.Logger
+	ActionsProvider       *actions.ActionsProvider
+	TaskerClient          *tasker_client.TaskerClient
+	RedisDSN              string
+	RedisLockDB           int
+	RedisLockMinIdleConns int
+	RedisLockPoolSize     int
+	Concurrency           int
+	Logger                logf.Logger
 }
 
 type TaskerProcessor struct {
+	LockProvider    *redislock.Client
 	ActionsProvider *actions.ActionsProvider
 	TaskerClient    *tasker_client.TaskerClient
 }
@@ -29,9 +38,17 @@ type TaskerServer struct {
 }
 
 func NewTaskerServer(o Opts) *TaskerServer {
+	redisLockClient := redis.NewClient(&redis.Options{
+		Addr:         o.RedisDSN,
+		DB:           o.RedisLockDB,
+		MinIdleConns: o.RedisLockMinIdleConns,
+		PoolSize:     o.RedisLockPoolSize,
+	})
+
 	taskerProcessor := &TaskerProcessor{
 		ActionsProvider: o.ActionsProvider,
 		TaskerClient:    o.TaskerClient,
+		LockProvider:    redislock.New(redisLockClient),
 	}
 
 	asynqServer := asynq.NewServer(
