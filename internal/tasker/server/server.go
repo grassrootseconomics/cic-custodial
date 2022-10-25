@@ -1,6 +1,8 @@
 package server
 
 import (
+	"time"
+
 	"github.com/grassrootseconomics/cic-custodial/internal/actions"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	"github.com/hibiken/asynq"
@@ -38,6 +40,13 @@ func NewTaskerServer(o Opts) *TaskerServer {
 		asynq.Config{
 			Concurrency: o.Concurrency,
 			Logger:      asynqCompatibleLogger(o.Logger),
+			RetryDelayFunc: func(n int, e error, t *asynq.Task) time.Duration {
+				if n < 6 {
+					return 1 * time.Second
+				} else {
+					return asynq.DefaultRetryDelayFunc(n, e, t)
+				}
+			},
 		},
 	)
 
