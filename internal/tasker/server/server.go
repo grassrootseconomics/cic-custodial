@@ -3,6 +3,7 @@ package server
 import (
 	"time"
 
+	"github.com/bsm/redislock"
 	"github.com/grassrootseconomics/cic-custodial/internal/actions"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	"github.com/hibiken/asynq"
@@ -45,6 +46,14 @@ func NewTaskerServer(o Opts) *TaskerServer {
 					return 1 * time.Second
 				} else {
 					return asynq.DefaultRetryDelayFunc(n, e, t)
+				}
+			},
+			IsFailure: func(err error) bool {
+				switch err {
+				case redislock.ErrNotObtained:
+					return false
+				default:
+					return true
 				}
 			},
 		},
