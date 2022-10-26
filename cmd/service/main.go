@@ -63,7 +63,7 @@ func main() {
 		ActionsProvider:       actionsProvider,
 		TaskerClient:          taskerClient,
 		RedisDSN:              ko.MustString("redis.dsn"),
-		Concurrency:           15,
+		Concurrency:           20,
 		Logger:                lo,
 		RedisLockDB:           1,
 		RedisLockMinIdleConns: 3,

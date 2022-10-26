@@ -1,6 +1,9 @@
 package api
 
 import (
+	"net/http"
+
+	"github.com/arl/statsviz"
 	"github.com/grassrootseconomics/cic-custodial/internal/actions"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	"github.com/labstack/echo/v4"
@@ -19,6 +22,12 @@ func BootstrapHTTPServer(o Opts) *echo.Echo {
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
+
+	// Debug
+	statsVizMux := http.NewServeMux()
+	_ = statsviz.Register(statsVizMux)
+	server.GET("/debug/statsviz/", echo.WrapHandler(statsVizMux))
+	server.GET("/debug/statsviz/*", echo.WrapHandler(statsVizMux))
 
 	server.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
