@@ -62,6 +62,9 @@ func (tp *TaskerProcessor) giftGasProcessor(ctx context.Context, t *asynq.Task) 
 		Nonce: nonce,
 	}, big.NewInt(initialGiftGasValue))
 	if err != nil {
+		if err := tp.Noncestore.Return(ctx, p.PublicKey); err != nil {
+			return err
+		}
 		return err
 	}
 
@@ -69,11 +72,17 @@ func (tp *TaskerProcessor) giftGasProcessor(ctx context.Context, t *asynq.Task) 
 		Tx: builtTx,
 	}, client.TxDispatchTask)
 	if err != nil {
+		if err := tp.Noncestore.Return(ctx, p.PublicKey); err != nil {
+			return err
+		}
 		return err
 	}
 
 	_, err = tp.TaskerClient.CreateRegistrationTask(p, client.ActivateAccountTask)
 	if err != nil {
+		if err := tp.Noncestore.Return(ctx, p.PublicKey); err != nil {
+			return err
+		}
 		return err
 	}
 

@@ -8,7 +8,6 @@ import (
 	"github.com/grassrootseconomics/cic-go-sdk/chain"
 	"github.com/lmittmann/w3"
 	"github.com/lmittmann/w3/module/eth"
-	"github.com/zerodha/logf"
 )
 
 // Opts represents the Redis nonce store specific params
@@ -18,14 +17,12 @@ type Opts struct {
 	MinIdleConns  int
 	PoolSize      int
 	ChainProvider *chain.Provider
-	Lo            logf.Logger
 }
 
 // RedisNoncestore implements `noncestore.Noncestore`
 type RedisNoncestore struct {
 	chainProvider *chain.Provider
 	redis         *redis.Client
-	lo            logf.Logger
 }
 
 func NewRedisNoncestore(o Opts) (noncestore.Noncestore, error) {
@@ -43,7 +40,6 @@ func NewRedisNoncestore(o Opts) (noncestore.Noncestore, error) {
 	return &RedisNoncestore{
 		redis:         redisClient,
 		chainProvider: o.ChainProvider,
-		lo:            o.Lo,
 	}, nil
 }
 
@@ -81,20 +77,20 @@ func (ns *RedisNoncestore) Acquire(ctx context.Context, publicKey string) (uint6
 	return nonce, nil
 }
 
-func (ns *RedisNoncestore) Return(ctx context.Context, publicKey string) (uint64, error) {
+func (ns *RedisNoncestore) Return(ctx context.Context, publicKey string)  error {
 	nonce, err := ns.redis.Get(ctx, publicKey).Uint64()
 	if err != nil {
-		return 0, err
+		return  err
 	}
 
 	if nonce > 0 {
 		err = ns.redis.Decr(ctx, publicKey).Err()
 		if err != nil {
-			return 0, err
+			return err
 		}
 	}
 
-	return nonce, nil
+	return nil
 }
 
 func (ns *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey string) (uint64, error) {
@@ -121,7 +117,6 @@ func (ns *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey strin
 func (ns *RedisNoncestore) SetNewAccountNonce(ctx context.Context, publicKey string) error {
 	err := ns.redis.Set(ctx, publicKey, 0, 0).Err()
 	if err != nil {
-		ns.lo.Error("noncestore", "err", err)
 		return err
 	}
 
