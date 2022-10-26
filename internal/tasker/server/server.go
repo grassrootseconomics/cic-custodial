@@ -1,12 +1,16 @@
 package server
 
 import (
+	"crypto/ecdsa"
 	"time"
 
 	"github.com/bsm/redislock"
+	eth_crypto "github.com/ethereum/go-ethereum/crypto"
 	"github.com/go-redis/redis/v8"
-	"github.com/grassrootseconomics/cic-custodial/internal/actions"
+	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
+	"github.com/grassrootseconomics/cic-custodial/internal/noncestore"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
+	"github.com/grassrootseconomics/cic-go-sdk/chain"
 	"github.com/hibiken/asynq"
 	"github.com/zerodha/logf"
 )
@@ -16,7 +20,11 @@ const (
 )
 
 type Opts struct {
-	ActionsProvider       *actions.ActionsProvider
+	SystemPublicKey       string
+	SystemPrivateKey      string
+	ChainProvider         *chain.Provider
+	Keystore              keystore.Keystore
+	Noncestore            noncestore.Noncestore
 	TaskerClient          *tasker_client.TaskerClient
 	RedisDSN              string
 	RedisLockDB           int
@@ -27,9 +35,13 @@ type Opts struct {
 }
 
 type TaskerProcessor struct {
-	LockProvider    *redislock.Client
-	ActionsProvider *actions.ActionsProvider
-	TaskerClient    *tasker_client.TaskerClient
+	SystemPublicKey  string
+	SystemPrivateKey *ecdsa.PrivateKey
+	ChainProvider    *chain.Provider
+	Noncestore       noncestore.Noncestore
+	Keystore         keystore.Keystore
+	LockProvider     *redislock.Client
+	TaskerClient     *tasker_client.TaskerClient
 }
 
 type TaskerServer struct {
@@ -37,7 +49,12 @@ type TaskerServer struct {
 	Mux    *asynq.ServeMux
 }
 
-func NewTaskerServer(o Opts) *TaskerServer {
+func NewTaskerServer(o Opts) (*TaskerServer, error) {
+	loadedPrivateKey, err := eth_crypto.HexToECDSA(o.SystemPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
 	redisLockClient := redis.NewClient(&redis.Options{
 		Addr:         o.RedisDSN,
 		DB:           o.RedisLockDB,
@@ -46,9 +63,13 @@ func NewTaskerServer(o Opts) *TaskerServer {
 	})
 
 	taskerProcessor := &TaskerProcessor{
-		ActionsProvider: o.ActionsProvider,
-		TaskerClient:    o.TaskerClient,
-		LockProvider:    redislock.New(redisLockClient),
+		SystemPublicKey:  o.SystemPublicKey,
+		SystemPrivateKey: loadedPrivateKey,
+		ChainProvider:    o.ChainProvider,
+		Noncestore:       o.Noncestore,
+		Keystore:         o.Keystore,
+		TaskerClient:     o.TaskerClient,
+		LockProvider:     redislock.New(redisLockClient),
 	}
 
 	asynqServer := asynq.NewServer(
@@ -85,5 +106,5 @@ func NewTaskerServer(o Opts) *TaskerServer {
 	return &TaskerServer{
 		Server: asynqServer,
 		Mux:    mux,
-	}
+	}, nil
 }

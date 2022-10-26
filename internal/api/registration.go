@@ -3,25 +3,30 @@ package api
 import (
 	"net/http"
 
-	"github.com/grassrootseconomics/cic-custodial/internal/actions"
+	"github.com/grassrootseconomics/cic-custodial/internal/ethereum"
+	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	"github.com/labstack/echo/v4"
 )
 
 type registrationResponse struct {
 	PublicKey string `json:"publicKey"`
-	JobRef string `json:"jobRef"`
+	JobRef    string `json:"jobRef"`
 }
 
 func handleRegistration(c echo.Context) error {
 	var (
-		ap = c.Get("actions").(*actions.ActionsProvider)
 		tc = c.Get("tasker_client").(*tasker_client.TaskerClient)
+		ks = c.Get("keystore").(keystore.Keystore)
 	)
 
-	generatedKeyPair, err := ap.CreateNewKeyPair(c.Request().Context())
+	generatedKeyPair, err := ethereum.GenerateKeyPair()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "ERR_GEN_KEYPAIR")
+	}
+
+	if err := ks.WriteKeyPair(c.Request().Context(), generatedKeyPair); err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "ERR_SAVE_KEYPAIR")
 	}
 
 	job, err := tc.CreateRegistrationTask(tasker_client.RegistrationPayload{

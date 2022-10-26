@@ -8,7 +8,6 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/grassrootseconomics/cic-custodial/internal/actions"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
 	tasker_client "github.com/grassrootseconomics/cic-custodial/internal/tasker/client"
 	tasker_server "github.com/grassrootseconomics/cic-custodial/internal/tasker/server"
@@ -40,35 +39,32 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	taskerClient = initTaskerClient()
-
-	actionsProvider, err := actions.NewActionsProvider(actions.Opts{
-		SystemPublicKey:  ko.MustString("admin.public"),
-		SystemPrivateKey: ko.MustString("admin.key"),
-		ChainProvider:    chainProvider,
-		Keystore:         initKeystore(),
-		Noncestore:       initNoncestore(),
-		Logger:           lo,
-	})
-	if err != nil {
-		lo.Fatal("initActionsProvider", "err", err)
-	}
+	taskerClient := initTaskerClient()
+	keystore := initKeystore()
+	noncestore := initNoncestore()
 
 	httpServer = api.BootstrapHTTPServer(api.Opts{
-		ActionsProvider: actionsProvider,
-		TaskerClient:    taskerClient,
+		Keystore:     keystore,
+		TaskerClient: taskerClient,
 	})
 
-	taskerServer = tasker_server.NewTaskerServer(tasker_server.Opts{
-		ActionsProvider:       actionsProvider,
+	taskerServer, err := tasker_server.NewTaskerServer(tasker_server.Opts{
+		SystemPublicKey:       ko.MustString("admin.public"),
+		SystemPrivateKey:      ko.MustString("admin.key"),
+		ChainProvider:         chainProvider,
+		Keystore:              keystore,
+		Noncestore:            noncestore,
 		TaskerClient:          taskerClient,
 		RedisDSN:              ko.MustString("redis.dsn"),
-		Concurrency:           20,
-		Logger:                lo,
 		RedisLockDB:           1,
 		RedisLockMinIdleConns: 3,
 		RedisLockPoolSize:     6,
+		Concurrency:           20,
+		Logger:                lo,
 	})
+	if err != nil {
+		lo.Fatal("initTaskerServer", "err", err)
+	}
 
 	var wg sync.WaitGroup
 

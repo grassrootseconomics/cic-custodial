@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"log"
 	"strings"
 
@@ -90,6 +91,8 @@ func initKeystore() keystore.Keystore {
 }
 
 func initNoncestore() noncestore.Noncestore {
+	var loadedNoncestore noncestore.Noncestore
+
 	switch provider := ko.MustString("noncestore.provider"); provider {
 	case "redis":
 		redisNoncestore, err := redis_noncestore.NewRedisNoncestore(redis_noncestore.Opts{
@@ -103,11 +106,22 @@ func initNoncestore() noncestore.Noncestore {
 			lo.Fatal("initNoncestore", "error", err)
 		}
 
-		return redisNoncestore
+		loadedNoncestore = redisNoncestore
 	case "postgres":
 		lo.Fatal("initNoncestore", "error", "not implemented")
 	default:
 		lo.Fatal("initNoncestore", "error", "no noncestore provider selected")
 	}
-	return nil
+
+	currentSystemNonce, err := loadedNoncestore.Peek(context.Background(), ko.MustString("admin.public"))
+	lo.Debug("initNoncestore: loaded (noncestore) system nonce", "nonce", currentSystemNonce)
+	if err != nil {
+		nonce, err := loadedNoncestore.SyncNetworkNonce(context.Background(), ko.MustString("admin.public"))
+		lo.Debug("initNoncestore: syncing system nonce", "nonce", nonce)
+		if err != nil {
+			lo.Fatal("initNonceStore", "error", "system account nonce sync failed")
+		}
+	}
+
+	return loadedNoncestore
 }
