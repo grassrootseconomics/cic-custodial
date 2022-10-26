@@ -6,7 +6,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func incrementalMigration(dbPool *pgxpool.Pool) error {
+func applyMigration(dbPool *pgxpool.Pool) error {
 	_, err := dbPool.Exec(context.Background(), `
 	CREATE TABLE IF NOT EXISTS keystore (
 		id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

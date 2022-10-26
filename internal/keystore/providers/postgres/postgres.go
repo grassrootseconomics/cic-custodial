@@ -6,8 +6,8 @@ import (
 	"fmt"
 
 	eth_crypto "github.com/ethereum/go-ethereum/crypto"
-	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/ethereum"
+	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
@@ -29,7 +29,7 @@ func NewPostgresKeytore(o Opts) (keystore.Keystore, error) {
 		return nil, err
 	}
 
-	if err := incrementalMigration(dbPool); err != nil {
+	if err := applyMigration(dbPool); err != nil {
 		return nil, fmt.Errorf("keystore migration failed %v", err)
 	}
 
