@@ -9,7 +9,7 @@ require (
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/grassrootseconomics/cic-go-sdk v0.2.0
 	github.com/hibiken/asynq v0.23.0
-	github.com/jackc/pgx/v5 v5.0.1
+	github.com/jackc/pgx/v5 v5.0.4
 	github.com/knadh/koanf v1.4.3
 	github.com/labstack/echo/v4 v4.9.0
 	github.com/lmittmann/w3 v0.10.0
@@ -60,7 +60,7 @@ require (
 	golang.org/x/crypto v0.0.0-20220926161630-eccd6366d1be // indirect
 	golang.org/x/net v0.0.0-20220607020251-c690dde0001d // indirect
 	golang.org/x/sys v0.0.0-20220928140112-f11e5e49a4ec // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/text v0.3.8 // indirect
 	golang.org/x/time v0.0.0-20220922220347-f3bd1da661af // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
