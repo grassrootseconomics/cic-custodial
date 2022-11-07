@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/arl/statsviz v0.5.1
 	github.com/bsm/redislock v0.7.2
-	github.com/ethereum/go-ethereum v1.10.25
+	github.com/ethereum/go-ethereum v1.10.26
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/grassrootseconomics/cic-go-sdk v0.2.0
 	github.com/hibiken/asynq v0.23.0
