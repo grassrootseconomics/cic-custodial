@@ -60,7 +60,7 @@ func TransferToken(
 			return err
 		}
 
-		input, err := abi.EncodeArgs(p.To, parseTransferValue(p.Amount, system.TokenDecimals))
+		input, err := abi.EncodeArgs(w3.A(p.To), parseTransferValue(p.Amount, system.TokenDecimals))
 		if err != nil {
 			return fmt.Errorf("ABI encode failed %v: %w", err, asynq.SkipRetry)
 		}

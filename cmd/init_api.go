@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/arl/statsviz"
+	"github.com/go-playground/validator"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
 	"github.com/labstack/echo/v4"
 )
@@ -20,11 +21,19 @@ func initApiServer() *echo.Echo {
 		server.GET("/debug/statsviz/*", echo.WrapHandler(statsVizMux))
 	}
 
+	server.Validator = &api.CustomValidator{
+		Validator: validator.New(),
+	}
+
 	apiRoute := server.Group("/api")
 
-	apiRoute.GET("/register", api.RegistrationHandler(
+	apiRoute.POST("/register", api.RegistrationHandler(
 		taskerClient,
 		postgresKeystore,
+	))
+
+	apiRoute.POST("/transfer", api.TransferHandler(
+		taskerClient,
 	))
 
 	return server

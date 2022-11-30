@@ -13,7 +13,7 @@ import (
 
 type registrationResponse struct {
 	PublicKey string `json:"publicKey"`
-	JobRef    string `json:"jobRef"`
+	TaskRef    string `json:"taskRef"`
 }
 
 func RegistrationHandler(
@@ -32,31 +32,31 @@ func RegistrationHandler(
 		if err := keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair); err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
 				Ok:    false,
-				Error: INTERNAL,
+				Error: INTERNAL_ERROR,
 			})
 		}
 
-		jobPayload, err := json.Marshal(task.SystemPayload{
+		taskPayload, err := json.Marshal(task.SystemPayload{
 			PublicKey: generatedKeyPair.Public,
 		})
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
 				Ok:    false,
-				Error: JSON_MARSHAL,
+				Error: JSON_MARSHAL_ERROR,
 			})
 		}
 
-		job, err := taskerClient.CreateTask(
+		task, err := taskerClient.CreateTask(
 			tasker.PrepareAccountTask,
 			tasker.DefaultPriority,
 			&tasker.Task{
-				Payload: jobPayload,
+				Payload: taskPayload,
 			},
 		)
 		if err != nil {
 			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
 				Ok:    false,
-				Error: TASK_CHAIN,
+				Error: TASK_CHAIN_ERROR,
 			})
 		}
 
@@ -64,7 +64,7 @@ func RegistrationHandler(
 			Ok: true,
 			Data: registrationResponse{
 				PublicKey: generatedKeyPair.Public,
-				JobRef:    job.ID,
+				TaskRef:    task.ID,
 			},
 		})
 	}
