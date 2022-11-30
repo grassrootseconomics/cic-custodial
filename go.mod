@@ -7,7 +7,7 @@ require (
 	github.com/bsm/redislock v0.7.2
 	github.com/celo-org/celo-blockchain v1.6.1
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/google/uuid v1.2.0
+	github.com/google/uuid v1.3.0
 	github.com/grassrootseconomics/cic-celo-sdk v0.3.0
 	github.com/grassrootseconomics/w3-celo-patch v0.1.0
 	github.com/hibiken/asynq v0.23.0
