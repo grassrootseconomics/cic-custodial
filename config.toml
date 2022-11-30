@@ -3,16 +3,16 @@ address          = ":5000"
 statsviz_debug   = true
 
 [system]
-gas_refill_threshold     = 1000000
-gas_refill_value         = 1000000
-giftable_gas_value       = 2000000
+gas_refill_threshold     = 100000000000000
+gas_refill_value         = 100000000000000
+giftable_gas_value       = 200000000000000
 giftable_token_address   = "0x486aD10d70107900546455F7a0e022c300F157Bf"
-giftable_token_value     = 5000000
+giftable_token_value     = 5000000000000000000
 private_key              = "a6af6c597c614e3c8ee4b7638ab7c3f737aece3773a5413ca8caf4338e6b06d1"
 lock_prefix              = "lock:"
 public_key               = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
-token_decimals           = 6
-token_transfer_gas_limit = 3000001
+token_decimals           = 18
+token_transfer_gas_limit = 100000
 
 [logg]
 caller = true
