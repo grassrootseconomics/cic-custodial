@@ -1,0 +1,29 @@
+builds:
+  - env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+    main: ./cmd/service
+    ldflags:
+      - -s -w
+
+archives:
+  - format: tar.gz
+    files:
+      - LICENSE
+      - config.toml
+
+dockers:
+  - goos: linux
+    goarch: amd64
+    ids:
+    - cic-dw
+    image_templates:
+    - "ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:latest"
+    - "ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:{{ .Tag }}"
+    dockerfile: Dockerfile
+    extra_files:
+    - config.toml
+  
