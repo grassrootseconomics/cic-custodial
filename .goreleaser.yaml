@@ -1,11 +1,11 @@
 builds:
   - env:
-      - CGO_ENABLED=0
+      - CGO_ENABLED=1
     goos:
       - linux
     goarch:
       - amd64
-    main: ./cmd/service
+    main: ./cmd
     ldflags:
       - -s -w
 
@@ -19,7 +19,7 @@ dockers:
   - goos: linux
     goarch: amd64
     ids:
-    - cic-dw
+    - cic-custodial
     image_templates:
     - "ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:latest"
     - "ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:{{ .Tag }}"
