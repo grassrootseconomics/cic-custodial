@@ -1,6 +1,6 @@
 builds:
   - id: linux-amd64
-  - env:
+    env:
       - CGO_ENABLED=1
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
@@ -11,7 +11,6 @@ builds:
     main: ./cmd
     ldflags:
       - -s -w
-    binary: cic-custodial
 
 archives:
   - format: tar.gz
