@@ -13,6 +13,7 @@ import (
 
 func initSystemContainer() *tasker.SystemContainer {
 	return &tasker.SystemContainer{
+		Abis:                  initAbis(),
 		GasRefillThreshold:    big.NewInt(ko.MustInt64("system.gas_refill_threshold")),
 		GasRefillValue:        big.NewInt(ko.MustInt64("system.gas_refill_value")),
 		GiftableGasValue:      big.NewInt(ko.MustInt64("system.giftable_gas_value")),
@@ -24,6 +25,13 @@ func initSystemContainer() *tasker.SystemContainer {
 		PublicKey:             ko.MustString("system.public_key"),
 		TokenDecimals:         ko.MustInt("system.token_decimals"),
 		TokenTransferGasLimit: uint64(ko.MustInt64("system.token_transfer_gas_limit")),
+	}
+}
+
+func initAbis() map[string]*w3.Func {
+	return map[string]*w3.Func{
+		"mint":     w3.MustNewFunc("mint(address,uint256)", ""),
+		"transfer": w3.MustNewFunc("transfer(address,uint256)", "bool"),
 	}
 }
 

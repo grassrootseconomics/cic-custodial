@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/celo-org/celo-blockchain/common"
+	"github.com/grassrootseconomics/w3-celo-patch"
 )
 
 type (
@@ -15,6 +16,7 @@ type (
 )
 
 type SystemContainer struct {
+	Abis                  map[string]*w3.Func
 	GasRefillThreshold    *big.Int
 	GasRefillValue        *big.Int
 	GiftableGasValue      *big.Int

@@ -147,12 +147,7 @@ func GiftTokenProcessor(
 			return err
 		}
 
-		abi, err := w3.NewFunc("mint(address,uint256)", "")
-		if err != nil {
-			return err
-		}
-
-		input, err := abi.EncodeArgs(publicKey, system.GiftableTokenValue)
+		input, err := system.Abis["mint"].EncodeArgs(publicKey, system.GiftableTokenValue)
 		if err != nil {
 			return fmt.Errorf("ABI encode failed %v: %w", err, asynq.SkipRetry)
 		}

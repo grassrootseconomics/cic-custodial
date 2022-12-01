@@ -55,12 +55,7 @@ func TransferToken(
 			return err
 		}
 
-		abi, err := w3.NewFunc("transfer(address,uint256)", "bool")
-		if err != nil {
-			return err
-		}
-
-		input, err := abi.EncodeArgs(w3.A(p.To), parseTransferValue(p.Amount, system.TokenDecimals))
+		input, err := system.Abis["transfer"].EncodeArgs(w3.A(p.To), parseTransferValue(p.Amount, system.TokenDecimals))
 		if err != nil {
 			return fmt.Errorf("ABI encode failed %v: %w", err, asynq.SkipRetry)
 		}
