@@ -14,11 +14,6 @@ public_key               = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
 token_decimals           = 18
 token_transfer_gas_limit = 100000
 
-[logg]
-caller = true
-color  = true
-debug  = true
-
 [chain]
 rpc_endpoint = "https://alfajores-forno.celo-testnet.org"
 testnet      = true

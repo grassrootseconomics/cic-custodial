@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"os"
 	"os/signal"
 	"strings"
@@ -20,12 +21,12 @@ import (
 	"github.com/zerodha/logf"
 )
 
-type service struct {
-	taskerServer *tasker.TaskerServer
-	apiServer    *echo.Echo
-}
-
 var (
+	confFlag       string
+	debugFlag      bool
+	taskerModeFlag bool
+	apiModeFlag    bool
+
 	asynqRedisPool   *redis.RedisPool
 	celoProvider     *celo.Provider
 	commonRedisPool  *redis.RedisPool
@@ -40,8 +41,14 @@ var (
 )
 
 func init() {
-	ko = initConfig("config.toml")
-	lo = initLogger()
+	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
+	flag.BoolVar(&debugFlag, "log", false, "Enable debug logging")
+	flag.BoolVar(&taskerModeFlag, "tasker", true, "Start tasker")
+	flag.BoolVar(&apiModeFlag, "api", true, "Start API server")
+	flag.Parse()
+
+	lo = initLogger(debugFlag)
+	ko = initConfig(confFlag)
 
 	celoProvider = initCeloProvider()
 	postgresPool = initPostgresPool()
@@ -55,56 +62,61 @@ func init() {
 }
 
 func main() {
-	service := &service{}
+	var (
+		tasker    *tasker.TaskerServer
+		apiServer *echo.Echo
+		wg        sync.WaitGroup
+	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	service.taskerServer = initTasker()
-	service.apiServer = initApiServer()
+	if apiModeFlag {
+		apiServer = initApiServer()
 
-	startServices(service, ctx)
-}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 
-func startServices(serviceContainer *service, ctx context.Context) {
-	wg := sync.WaitGroup{}
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		if err := serviceContainer.taskerServer.Start(); err != nil {
-			lo.Fatal("Could not start task server", "err", err)
-		}
-	}()
-
-	wg.Add(1)
-	go func() {
-		defer wg.Done()
-
-		if err := serviceContainer.apiServer.Start(ko.MustString("service.address")); err != nil {
-			if strings.Contains(err.Error(), "Server closed") {
-				lo.Info("Shutting down server")
-			} else {
-				lo.Fatal("Could not start api server", "err", err)
+			lo.Info("Starting API server")
+			if err := apiServer.Start(ko.MustString("service.address")); err != nil {
+				if strings.Contains(err.Error(), "Server closed") {
+					lo.Info("Shutting down server")
+				} else {
+					lo.Fatal("Could not start api server", "err", err)
+				}
 			}
-		}
-	}()
+		}()
+	}
 
-	gracefulShutdown(serviceContainer, ctx)
-	wg.Wait()
-}
+	if taskerModeFlag {
+		tasker = initTasker()
 
-func gracefulShutdown(serviceContainer *service, ctx context.Context) {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+
+			lo.Info("Starting tasker")
+			if err := tasker.Start(); err != nil {
+				lo.Fatal("Could not start task server", "err", err)
+			}
+		}()
+	}
+
 	<-ctx.Done()
 	lo.Info("Graceful shutdown triggered")
 
-	lo.Info("Stopping tasker dequeue")
-	serviceContainer.taskerServer.Stop()
-	lo.Info("Stopped tasker")
-
-	if err := serviceContainer.apiServer.Shutdown(ctx); err != nil {
-		lo.Error("Could not gracefully shutdown api server", "err", err)
+	if taskerModeFlag {
+		lo.Debug("Stopping tasker")
+		tasker.Stop()
 	}
-	lo.Info("Stopped API server")
+
+	if apiModeFlag {
+		lo.Debug("Stopping api server")
+		if err := apiServer.Shutdown(ctx); err != nil {
+			lo.Error("Could not gracefully shutdown api server", "err", err)
+		}
+	}
+
+	wg.Wait()
 }

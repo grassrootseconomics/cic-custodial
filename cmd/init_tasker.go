@@ -7,6 +7,8 @@ import (
 )
 
 func initTasker() *tasker.TaskerServer {
+	lo.Debug("Bootstrapping tasker")
+
 	taskerServerOpts := tasker.TaskerServerOpts{
 		Concurrency:     ko.MustInt("asynq.concurrency"),
 		Logg:            lo,
@@ -15,7 +17,7 @@ func initTasker() *tasker.TaskerServer {
 		TaskerClient:    taskerClient,
 	}
 
-	if ko.Bool("asynq.debug") {
+	if debugFlag {
 		taskerServerOpts.LogLevel = asynq.DebugLevel
 	}
 
@@ -58,5 +60,6 @@ func initTasker() *tasker.TaskerServer {
 		celoProvider,
 	))
 
+	lo.Debug("Registered all tasker handlers")
 	return taskerServer
 }

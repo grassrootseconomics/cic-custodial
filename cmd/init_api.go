@@ -10,11 +10,13 @@ import (
 )
 
 func initApiServer() *echo.Echo {
+	lo.Debug("bootstrapping api server")
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
 
 	if ko.Bool("service.statsviz_debug") {
+		lo.Debug("Starting stats_viz at /debug/statsviz")
 		statsVizMux := http.NewServeMux()
 		_ = statsviz.Register(statsVizMux)
 		server.GET("/debug/statsviz/", echo.WrapHandler(statsVizMux))
@@ -36,5 +38,6 @@ func initApiServer() *echo.Echo {
 		taskerClient,
 	))
 
+	lo.Debug("Registered all api handlers")
 	return server
 }

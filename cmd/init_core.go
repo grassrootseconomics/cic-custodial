@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"strings"
 	"time"
 
@@ -28,25 +27,30 @@ func initConfig(configFilePath string) *koanf.Koanf {
 
 	confFile := file.Provider(configFilePath)
 	if err := ko.Load(confFile, toml.Parser()); err != nil {
-		log.Fatalf("could not load config file: %v", err)
+		lo.Fatal("Could not load config file", "error", err)
 	}
 
 	if err := ko.Load(env.Provider("", ".", func(s string) string {
 		return strings.ReplaceAll(strings.ToLower(
 			strings.TrimPrefix(s, "")), "_", ".")
 	}), nil); err != nil {
-		log.Fatalf("could not override config from env vars: %v", err)
+		lo.Fatal("Could not override config from env vars", "error", err)
 	}
 
 	return ko
 }
 
-func initLogger() logf.Logger {
-	return logg.NewLogg(logg.LoggOpts{
-		Debug:  ko.Bool("logg.debug"),
-		Color:  ko.Bool("logg.color"),
-		Caller: ko.Bool("logg.caller"),
-	})
+func initLogger(debug bool) logf.Logger {
+	loggOpts := logg.LoggOpts{
+		Color: true,
+	}
+
+	if debug {
+		loggOpts.Caller = true
+		loggOpts.Debug = true
+	}
+
+	return logg.NewLogg(loggOpts)
 }
 
 func initCeloProvider() *celo.Provider {
