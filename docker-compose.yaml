@@ -3,7 +3,9 @@ services:
   redis:
     image: redis:6-alpine
     restart: unless-stopped
-    command: redis-server --loglevel warning
+    command: redis-server --save 60 1 --loglevel warning
+    volumes:
+      - cic-custodial-redis:/data
     ports:
       - '6379:6379'
     healthcheck:
@@ -20,7 +22,7 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_DB=cic_custodial
     volumes:
-      - cic-custodial:/var/lib/postgresql/data
+      - cic-custodial-pg:/var/lib/postgresql/data
     ports:
       - '5432:5432'
     healthcheck:
@@ -49,5 +51,7 @@ services:
     ports:
       - '5000:5000'
 volumes:
-  cic-custodial:
+  cic-custodial-pg:
+    driver: local
+  cic-custodial-redis:
     driver: local
