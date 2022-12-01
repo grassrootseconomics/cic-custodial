@@ -1,6 +1,9 @@
 builds:
+  - id: linux-amd64
   - env:
       - CGO_ENABLED=1
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
     goos:
       - linux
     goarch:
@@ -8,22 +11,10 @@ builds:
     main: ./cmd
     ldflags:
       - -s -w
+    binary: cic-custodial
 
 archives:
   - format: tar.gz
     files:
       - LICENSE
       - config.toml
-
-dockers:
-  - goos: linux
-    goarch: amd64
-    ids:
-    - cic-custodial
-    image_templates:
-    - "ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:latest"
-    - "ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:{{ .Tag }}"
-    dockerfile: Dockerfile
-    extra_files:
-    - config.toml
-  

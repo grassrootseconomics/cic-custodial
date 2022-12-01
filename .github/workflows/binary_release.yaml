@@ -1,4 +1,4 @@
-name: goreleaser
+name: binary_release
 
 on:
   push:
@@ -8,6 +8,8 @@ on:
 jobs:
   goreleaser:
     runs-on: ubuntu-latest
+    container:
+      image: goreleaser/goreleaser-cross
     environment: build
     steps:
       - name: Checkout
@@ -30,6 +32,6 @@ jobs:
         uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
-          args: --parallelism 1 --rm-dist --skip-validate
+          args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
