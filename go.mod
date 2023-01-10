@@ -6,14 +6,16 @@ require (
 	github.com/arl/statsviz v0.5.1
 	github.com/bsm/redislock v0.7.2
 	github.com/celo-org/celo-blockchain v1.6.1
+	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
 	github.com/grassrootseconomics/cic-celo-sdk v0.3.0
 	github.com/grassrootseconomics/w3-celo-patch v0.1.0
 	github.com/hibiken/asynq v0.23.0
 	github.com/jackc/pgx/v5 v5.1.1
-	github.com/knadh/koanf v1.4.4
+	github.com/knadh/koanf v1.4.5
 	github.com/labstack/echo/v4 v4.9.1
+	github.com/stretchr/testify v1.8.1
 	github.com/zerodha/logf v0.5.5
 )
 
@@ -36,7 +38,6 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.0 // indirect
 	github.com/go-playground/universal-translator v0.18.0 // indirect
-	github.com/go-playground/validator v9.31.0+incompatible // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -69,7 +70,6 @@ require (
 	github.com/robfig/cron/v3 v3.0.1 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/spf13/cast v1.3.1 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect
 	github.com/tklauser/go-sysconf v0.3.11 // indirect
 	github.com/tklauser/numcpus v0.6.0 // indirect
@@ -84,6 +84,7 @@ require (
 	golang.org/x/text v0.4.0 // indirect
 	golang.org/x/time v0.0.0-20210220033141-f8bda1e9f3ba // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
+	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
