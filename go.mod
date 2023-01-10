@@ -9,7 +9,7 @@ require (
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
-	github.com/grassrootseconomics/cic-celo-sdk v0.3.0
+	github.com/grassrootseconomics/cic-celo-sdk v0.3.1
 	github.com/grassrootseconomics/w3-celo-patch v0.1.0
 	github.com/hibiken/asynq v0.24.0
 	github.com/jackc/pgx/v5 v5.2.0
