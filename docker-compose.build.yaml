@@ -6,5 +6,5 @@ services:
       context: .
       dockerfile: Dockerfile
       cache_from:
-        - ${IMAGE_BASE_URL:-ghcr.io/grassrootseconomics/cic-custodial}/cic-cache:latest
+        - ${IMAGE_BASE_URL:-ghcr.io/grassrootseconomics/cic-custodial}/cic-custodial:latest
         
