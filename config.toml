@@ -30,4 +30,4 @@ minconn = 5
 [asynq]
 concurrency = 25
 debug       = false
-dsn         = "redis://localhost:6379/0"
+dsn         = "redis://redis:6379/0"
