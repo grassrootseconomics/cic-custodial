@@ -12,7 +12,7 @@ require (
 	github.com/grassrootseconomics/cic-celo-sdk v0.3.0
 	github.com/grassrootseconomics/w3-celo-patch v0.1.0
 	github.com/hibiken/asynq v0.24.0
-	github.com/jackc/pgx/v5 v5.1.1
+	github.com/jackc/pgx/v5 v5.2.0
 	github.com/knadh/koanf v1.4.5
 	github.com/labstack/echo/v4 v4.9.1
 	github.com/stretchr/testify v1.8.1
