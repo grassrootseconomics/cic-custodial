@@ -10,8 +10,8 @@ import (
 )
 
 type Opts struct {
-	RedisPool     *redispool.RedisPool
-	ChainProvider *celo.Provider
+	RedisPool    *redispool.RedisPool
+	CeloProvider *celo.Provider
 }
 
 // RedisNoncestore implements `Noncestore`
@@ -23,7 +23,7 @@ type RedisNoncestore struct {
 func NewRedisNoncestore(o Opts) Noncestore {
 	return &RedisNoncestore{
 		redis:         o.RedisPool,
-		chainProvider: o.ChainProvider,
+		chainProvider: o.CeloProvider,
 	}
 }
 

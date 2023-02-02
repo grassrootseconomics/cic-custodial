@@ -12,6 +12,7 @@ type Key struct {
 	Private string
 }
 
+// Generate creates a new keypair from internally randomized entropy.
 func Generate() (Key, error) {
 	privateKey, err := crypto.GenerateKey()
 	if err != nil {

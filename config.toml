@@ -1,33 +1,45 @@
 [service]
-address          = ":5000"
-statsviz_debug   = true
+address = ":5000"
+# Exposes Prometheus metrics
+# /metrics endpoint
+metrics = true
 
+# System default values
+# Valus are in wei unless otherwise stated
 [system]
-gas_refill_threshold     = 100000000000000
-gas_refill_value         = 100000000000000
-giftable_gas_value       = 200000000000000
-giftable_token_address   = "0x486aD10d70107900546455F7a0e022c300F157Bf"
-giftable_token_value     = 5000000000000000000
-private_key              = "a6af6c597c614e3c8ee4b7638ab7c3f737aece3773a5413ca8caf4338e6b06d1"
-lock_prefix              = "lock:"
-public_key               = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
-token_decimals           = 18
+# Any account below 1 KES equivalent of CELO is topped up again
+# 10000000000000000 = 1 KES
+gas_refill_threshold = 10000000000000000
+gas_refill_value = 10000000000000000
+# Every custodial account is given 2 KES worth of CELO
+giftable_gas_value = 20000000000000000
+# The giftable token is a training voucher
+# Every new user is given 5 DGFT
+giftable_token_address = "0x486aD10d70107900546455F7a0e022c300F157Bf"
+giftable_token_value = 5000000
+# System private key
+# Should always be toped up
+private_key = "a6af6c597c614e3c8ee4b7638ab7c3f737aece3773a5413ca8caf4338e6b06d1"
+lock_prefix = "lock:"
+public_key = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
+token_decimals = 6
 token_transfer_gas_limit = 100000
 
 [chain]
 rpc_endpoint = "https://alfajores-forno.celo-testnet.org"
-testnet      = true
+testnet = true
 
 [postgres]
 debug = false
-dsn   = "postgres://postgres:postgres@localhost:5432/cic_custodial"
+dsn = "postgres://postgres:postgres@localhost:5432/cic_custodial"
 
 [redis]
-debug   = false
-dsn     = "redis://localhost:6379/1"
-minconn = 5
+debug = false
+dsn = "redis://localhost:6379/1"
+min_idle_conn = 5
 
 [asynq]
-concurrency = 25
-debug       = false
-dsn         = "redis://redis:6379/0"
+worker_count = 15
+debug = false
+dsn = "redis://redis:6379/0"
+task_retention_hrs = 24

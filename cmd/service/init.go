@@ -20,6 +20,7 @@ import (
 	"github.com/zerodha/logf"
 )
 
+// Load config file.
 func initConfig(configFilePath string) *koanf.Koanf {
 	var (
 		ko = koanf.New(".")
@@ -40,6 +41,7 @@ func initConfig(configFilePath string) *koanf.Koanf {
 	return ko
 }
 
+// Load logger.
 func initLogger(debug bool) logf.Logger {
 	loggOpts := logg.LoggOpts{
 		Color: true,
@@ -53,7 +55,8 @@ func initLogger(debug bool) logf.Logger {
 	return logg.NewLogg(loggOpts)
 }
 
-func initCeloProvider() *celo.Provider {
+// Load Celo chain provider.
+func initCeloProvider() (*celo.Provider, error) {
 	providerOpts := celo.ProviderOpts{
 		RpcEndpoint: ko.MustString("chain.rpc_endpoint"),
 	}
@@ -66,38 +69,28 @@ func initCeloProvider() *celo.Provider {
 
 	provider, err := celo.NewProvider(providerOpts)
 	if err != nil {
-		lo.Fatal("initChainProvider", "error", err)
+		return nil, err
 	}
 
-	return provider
+	return provider, nil
 }
 
-func initPostgresPool() *pgxpool.Pool {
+// Load postgres pool.
+func initPostgresPool() (*pgxpool.Pool, error) {
 	poolOpts := postgres.PostgresPoolOpts{
 		DSN: ko.MustString("postgres.dsn"),
 	}
 
 	pool, err := postgres.NewPostgresPool(poolOpts)
 	if err != nil {
-		lo.Fatal("initPostgresPool", "error", err)
+		return nil, err
 	}
 
-	return pool
+	return pool, nil
 }
 
-func initKeystore() keystore.Keystore {
-	keystore, err := keystore.NewPostgresKeytore(keystore.Opts{
-		PostgresPool: postgresPool,
-		Logg:         lo,
-	})
-	if err != nil {
-		lo.Fatal("initKeystore", "error", err)
-	}
-
-	return keystore
-}
-
-func initAsynqRedisPool() *redis.RedisPool {
+// Load separate redis connection for the tasker on a reserved db namespace.
+func initAsynqRedisPool() (*redis.RedisPool, error) {
 	poolOpts := redis.RedisPoolOpts{
 		DSN:          ko.MustString("asynq.dsn"),
 		MinIdleConns: ko.MustInt("redis.minconn"),
@@ -105,13 +98,14 @@ func initAsynqRedisPool() *redis.RedisPool {
 
 	pool, err := redis.NewRedisPool(poolOpts)
 	if err != nil {
-		lo.Fatal("initAsynqRedisPool", "error", err)
+		return nil, err
 	}
 
-	return pool
+	return pool, nil
 }
 
-func initCommonRedisPool() *redis.RedisPool {
+// Common redis connection on a different db namespace from the takser.
+func initCommonRedisPool() (*redis.RedisPool, error) {
 	poolOpts := redis.RedisPoolOpts{
 		DSN:          ko.MustString("redis.dsn"),
 		MinIdleConns: ko.MustInt("redis.minconn"),
@@ -119,26 +113,42 @@ func initCommonRedisPool() *redis.RedisPool {
 
 	pool, err := redis.NewRedisPool(poolOpts)
 	if err != nil {
-		lo.Fatal("initCommonRedisPool", "error", err)
+		return nil, err
 	}
 
-	return pool
+	return pool, nil
 }
 
-func initRedisNoncestore() nonce.Noncestore {
+// Load postgres based keystore
+func initPostgresKeystore(postgresPool *pgxpool.Pool) (keystore.Keystore, error) {
+	keystore, err := keystore.NewPostgresKeytore(keystore.Opts{
+		PostgresPool: postgresPool,
+		Logg:         lo,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return keystore, nil
+}
+
+// Load redis backed noncestore.
+func initRedisNoncestore(redisPool *redis.RedisPool, celoProvider *celo.Provider) nonce.Noncestore {
 	return nonce.NewRedisNoncestore(nonce.Opts{
-		RedisPool:     commonRedisPool,
-		ChainProvider: celoProvider,
+		RedisPool:    redisPool,
+		CeloProvider: celoProvider,
 	})
 }
 
-func initLockProvider() *redislock.Client {
-	return redislock.New(commonRedisPool.Client)
+// Load global lock provider.
+func initLockProvider(redisPool redislock.RedisClient) *redislock.Client {
+	return redislock.New(redisPool)
 }
 
-func initTaskerClient() *tasker.TaskerClient {
+// Load tasker client.
+func initTaskerClient(redisPool *redis.RedisPool) *tasker.TaskerClient {
 	return tasker.NewTaskerClient(tasker.TaskerClientOpts{
-		RedisPool:     asynqRedisPool,
-		TaskRetention: time.Hour * 12,
+		RedisPool:     redisPool,
+		TaskRetention: time.Duration(ko.MustInt64("asynq.task_retention_hrs")) * time.Hour,
 	})
 }
