@@ -41,5 +41,5 @@ min_idle_conn = 5
 [asynq]
 worker_count = 15
 debug = false
-dsn = "redis://redis:6379/0"
+dsn = "redis://localhost:6379/0"
 task_retention_hrs = 24

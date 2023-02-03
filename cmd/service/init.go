@@ -8,11 +8,13 @@ import (
 	celo "github.com/grassrootseconomics/cic-celo-sdk"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
+	"github.com/grassrootseconomics/cic-custodial/internal/queries"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/logg"
 	"github.com/grassrootseconomics/cic-custodial/pkg/postgres"
 	"github.com/grassrootseconomics/cic-custodial/pkg/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/knadh/goyesql/v2"
 	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/env"
@@ -93,7 +95,7 @@ func initPostgresPool() (*pgxpool.Pool, error) {
 func initAsynqRedisPool() (*redis.RedisPool, error) {
 	poolOpts := redis.RedisPoolOpts{
 		DSN:          ko.MustString("asynq.dsn"),
-		MinIdleConns: ko.MustInt("redis.minconn"),
+		MinIdleConns: ko.MustInt("redis.min_idle_conn"),
 	}
 
 	pool, err := redis.NewRedisPool(poolOpts)
@@ -108,7 +110,7 @@ func initAsynqRedisPool() (*redis.RedisPool, error) {
 func initCommonRedisPool() (*redis.RedisPool, error) {
 	poolOpts := redis.RedisPoolOpts{
 		DSN:          ko.MustString("redis.dsn"),
-		MinIdleConns: ko.MustInt("redis.minconn"),
+		MinIdleConns: ko.MustInt("redis.min_idle_conn"),
 	}
 
 	pool, err := redis.NewRedisPool(poolOpts)
@@ -121,13 +123,20 @@ func initCommonRedisPool() (*redis.RedisPool, error) {
 
 // Load postgres based keystore
 func initPostgresKeystore(postgresPool *pgxpool.Pool) (keystore.Keystore, error) {
-	keystore, err := keystore.NewPostgresKeytore(keystore.Opts{
-		PostgresPool: postgresPool,
-		Logg:         lo,
-	})
+	parsedQueries, err := goyesql.ParseFile(queriesFlag)
 	if err != nil {
 		return nil, err
 	}
+
+	loadedQueries, err := queries.LoadQueries(parsedQueries)
+	if err != nil {
+		return nil, err
+	}
+
+	keystore := keystore.NewPostgresKeytore(keystore.Opts{
+		PostgresPool: postgresPool,
+		Queries:      loadedQueries,
+	})
 
 	return keystore, nil
 }

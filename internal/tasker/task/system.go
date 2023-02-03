@@ -191,6 +191,7 @@ func GiftTokenProcessor(
 	}
 }
 
+// TODO: https://github.com/grassrootseconomics/cic-custodial/issues/43
 func RefillGasProcessor(
 	celoProvider *celo.Provider,
 	nonceProvider nonce.Noncestore,

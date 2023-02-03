@@ -29,6 +29,7 @@ func TxDispatch(
 			return fmt.Errorf("json.Unmarshal failed: %v: %w", err, asynq.SkipRetry)
 		}
 
+		// TODO: Handle all fail cases
 		if err := celoProvider.Client.CallCtx(
 			ctx,
 			eth.SendTx(p.Tx).Returns(&txHash),

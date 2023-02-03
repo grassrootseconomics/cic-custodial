@@ -19,7 +19,7 @@ func initAbis() map[string]*w3.Func {
 		// Keccak hash -> 0x449a52f8
 		"mintTo": w3.MustNewFunc("mintTo(address, uint256)", "bool"),
 		// Keccak hash -> 0xa9059cbb
-		"transfer":     w3.MustNewFunc("transfer(address,uint256)", "bool"),
+		"transfer": w3.MustNewFunc("transfer(address,uint256)", "bool"),
 		// Keccak hash -> 0x23b872dd
 		"transferFrom": w3.MustNewFunc("transferFrom(address, address, uint256)", "bool"),
 	}
@@ -43,7 +43,7 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) (*tas
 		TokenTransferGasLimit: uint64(ko.MustInt64("system.token_transfer_gas_limit")),
 	}
 	// Check if system signer account nonce is present.
-	// If not, we bootstrap it from the network.
+	// If not (first boot), we bootstrap it from the network.
 	currentSystemNonce, err := noncestore.Peek(ctx, ko.MustString("system.public_key"))
 	lo.Info("custodial: loaded (noncestore) system nonce", "nonce", currentSystemNonce)
 	if err == redis.Nil {

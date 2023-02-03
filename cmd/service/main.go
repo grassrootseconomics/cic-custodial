@@ -20,8 +20,9 @@ import (
 )
 
 var (
-	confFlag  string
-	debugFlag bool
+	confFlag    string
+	debugFlag   bool
+	queriesFlag string
 
 	lo logf.Logger
 	ko *koanf.Koanf
@@ -39,6 +40,7 @@ type custodial struct {
 func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
 	flag.BoolVar(&debugFlag, "log", false, "Enable debug logging")
+	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
 	flag.Parse()
 
 	lo = initLogger(debugFlag)
@@ -77,7 +79,7 @@ func main() {
 
 	postgresKeystore, err := initPostgresKeystore(postgresPool)
 	if err != nil {
-		lo.Fatal("main: critical error loading postgres keystore", "error", err)
+		lo.Fatal("main: critical error loading keystore")
 	}
 
 	redisNoncestore := initRedisNoncestore(redisPool, celoProvider)
