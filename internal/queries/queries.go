@@ -11,6 +11,9 @@ type Queries struct {
 	WriteKeyPair string `query:"write-key-pair"`
 	LoadKeyPair  string `query:"load-key-pair"`
 	// OTX
+	CreateOTX string `query:"create-otx"`
+	// Dispatch
+	CreateDispatchStatus string `query:"create-dispatch-status"`
 }
 
 func LoadQueries(q goyesql.Queries) (*Queries, error) {

@@ -27,8 +27,12 @@ func initApiServer(custodialContainer *custodial) *echo.Echo {
 
 	apiRoute := server.Group("/api")
 	apiRoute.POST("/account/create", api.CreateAccountHandler(
-		custodialContainer.taskerClient,
 		custodialContainer.keystore,
+		custodialContainer.taskerClient,
+	))
+
+	apiRoute.POST("/sign/transfer", api.SignTransferHandler(
+		custodialContainer.taskerClient,
 	))
 
 	return server

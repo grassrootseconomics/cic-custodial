@@ -31,10 +31,12 @@ func NewPostgresKeytore(o Opts) Keystore {
 
 // WriteKeyPair inserts a keypair into the db and returns the linked id.
 func (ks *PostgresKeystore) WriteKeyPair(ctx context.Context, keypair keypair.Key) (uint, error) {
-	var id uint
+	var (
+		id uint
+	)
 
 	if err := ks.db.QueryRow(ctx, ks.queries.WriteKeyPair, keypair.Public, keypair.Private).Scan(&id); err != nil {
-		return 0, err
+		return id, err
 	}
 
 	return id, nil
@@ -42,7 +44,9 @@ func (ks *PostgresKeystore) WriteKeyPair(ctx context.Context, keypair keypair.Ke
 
 // LoadPrivateKey loads a private key as a crypto primitive for direct use. An id is used to search for the private key.
 func (ks *PostgresKeystore) LoadPrivateKey(ctx context.Context, publicKey string) (*ecdsa.PrivateKey, error) {
-	var privateKeyString string
+	var (
+		privateKeyString string
+	)
 
 	if err := ks.db.QueryRow(ctx, ks.queries.LoadKeyPair, publicKey).Scan(&privateKeyString); err != nil {
 		return nil, err
