@@ -13,6 +13,7 @@ import (
 	celo "github.com/grassrootseconomics/cic-celo-sdk"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
+	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/knadh/koanf"
 	"github.com/labstack/echo/v4"
@@ -33,6 +34,7 @@ type custodial struct {
 	keystore        keystore.Keystore
 	lockProvider    *redislock.Client
 	noncestore      nonce.Noncestore
+	pgStore         store.Store
 	systemContainer *tasker.SystemContainer
 	taskerClient    *tasker.TaskerClient
 }
@@ -62,6 +64,11 @@ func main() {
 		lo.Fatal("main: critical error loading chain provider", "error", err)
 	}
 
+	queries, err := initQueries(queriesFlag)
+	if err != nil {
+		lo.Fatal("main: critical error loading SQL queries", "error", err)
+	}
+
 	postgresPool, err := initPostgresPool()
 	if err != nil {
 		lo.Fatal("main: critical error connecting to postgres", "error", err)
@@ -77,11 +84,12 @@ func main() {
 		lo.Fatal("main: critical error connecting to common redis db", "error", err)
 	}
 
-	postgresKeystore, err := initPostgresKeystore(postgresPool)
+	postgresKeystore, err := initPostgresKeystore(postgresPool, queries)
 	if err != nil {
 		lo.Fatal("main: critical error loading keystore")
 	}
 
+	pgStore := initPostgresStore(postgresPool, queries)
 	redisNoncestore := initRedisNoncestore(redisPool, celoProvider)
 	lockProvider := initLockProvider(redisPool.Client)
 	taskerClient := initTaskerClient(asynqRedisPool)
@@ -96,6 +104,7 @@ func main() {
 		keystore:        postgresKeystore,
 		lockProvider:    lockProvider,
 		noncestore:      redisNoncestore,
+		pgStore:         pgStore,
 		systemContainer: systemContainer,
 		taskerClient:    taskerClient,
 	}

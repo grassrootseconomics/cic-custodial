@@ -29,8 +29,8 @@ type (
 
 func TxDispatch(
 	celoProvider *celo.Provider,
-	js nats.JetStreamContext,
 	pg store.Store,
+	js nats.JetStreamContext,
 
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {

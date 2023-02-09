@@ -15,7 +15,6 @@ import (
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
 	"github.com/nats-io/nats.go"
-	"github.com/zerodha/logf"
 )
 
 type (
@@ -37,14 +36,13 @@ type (
 
 func SignTransfer(
 	celoProvider *celo.Provider,
-	js nats.JetStreamContext,
 	keystore keystore.Keystore,
 	lockProvider *redislock.Client,
 	noncestore nonce.Noncestore,
 	pg store.Store,
 	system *tasker.SystemContainer,
 	taskerClient *tasker.TaskerClient,
-	logger logf.Logger,
+	js nats.JetStreamContext,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (

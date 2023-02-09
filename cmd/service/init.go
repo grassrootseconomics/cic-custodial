@@ -9,6 +9,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
 	"github.com/grassrootseconomics/cic-custodial/internal/queries"
+	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/logg"
 	"github.com/grassrootseconomics/cic-custodial/pkg/postgres"
@@ -19,6 +20,7 @@ import (
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/nats-io/nats.go"
 	"github.com/zerodha/logf"
 )
 
@@ -121,8 +123,8 @@ func initCommonRedisPool() (*redis.RedisPool, error) {
 	return pool, nil
 }
 
-// Load postgres based keystore
-func initPostgresKeystore(postgresPool *pgxpool.Pool) (keystore.Keystore, error) {
+// Load SQL statements into struct.
+func initQueries(queriesPath string) (*queries.Queries, error) {
 	parsedQueries, err := goyesql.ParseFile(queriesFlag)
 	if err != nil {
 		return nil, err
@@ -133,9 +135,14 @@ func initPostgresKeystore(postgresPool *pgxpool.Pool) (keystore.Keystore, error)
 		return nil, err
 	}
 
+	return loadedQueries, nil
+}
+
+// Load postgres based keystore.
+func initPostgresKeystore(postgresPool *pgxpool.Pool, queries *queries.Queries) (keystore.Keystore, error) {
 	keystore := keystore.NewPostgresKeytore(keystore.Opts{
 		PostgresPool: postgresPool,
-		Queries:      loadedQueries,
+		Queries:      queries,
 	})
 
 	return keystore, nil
@@ -160,4 +167,43 @@ func initTaskerClient(redisPool *redis.RedisPool) *tasker.TaskerClient {
 		RedisPool:     redisPool,
 		TaskRetention: time.Duration(ko.MustInt64("asynq.task_retention_hrs")) * time.Hour,
 	})
+}
+
+// Load Postgres store
+func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) store.Store {
+	return store.NewPostgresStore(store.Opts{
+		PostgresPool: postgresPool,
+		Queries:      queries,
+	})
+}
+
+// Init JetStream context for tasker events.
+func initJetStream() (nats.JetStreamContext, error) {
+	natsConn, err := nats.Connect(ko.MustString("jetstream.endpoint"))
+	if err != nil {
+		return nil, err
+	}
+
+	js, err := natsConn.JetStream()
+	if err != nil {
+		return nil, err
+	}
+
+	// Bootstrap stream if it does not exist
+	stream, _ := js.StreamInfo(ko.MustString("jetstream.stream_name"))
+	if stream == nil {
+		lo.Info("jetstream: bootstrapping stream")
+		_, err = js.AddStream(&nats.StreamConfig{
+			Name:       ko.MustString("jetstream.stream_name"),
+			MaxAge:     time.Duration(ko.MustInt("jetstream.persist_duration_hours")) * time.Hour,
+			Storage:    nats.FileStorage,
+			Subjects:   ko.MustStrings("jetstream.stream_subjects"),
+			Duplicates: time.Duration(ko.MustInt("jetstream.dedup_duration_hours")) * time.Hour,
+		})
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return js, nil
 }

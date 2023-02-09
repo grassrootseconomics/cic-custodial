@@ -10,6 +10,10 @@ import (
 // Load tasker handlers, injecting any necessary handler dependencies from the system container.
 func initTasker(custodialContainer *custodial, redisPool *redis.RedisPool) *tasker.TaskerServer {
 	lo.Debug("Bootstrapping tasker")
+	js, err := initJetStream()
+	if err != nil {
+		lo.Fatal("filters: critical error loading jetstream", "error", err)
+	}
 
 	taskerServerOpts := tasker.TaskerServerOpts{
 		Concurrency:     ko.MustInt("asynq.worker_count"),
@@ -28,30 +32,40 @@ func initTasker(custodialContainer *custodial, redisPool *redis.RedisPool) *task
 	taskerServer.RegisterHandlers(tasker.PrepareAccountTask, task.PrepareAccount(
 		custodialContainer.noncestore,
 		custodialContainer.taskerClient,
+		js,
 	))
 	taskerServer.RegisterHandlers(tasker.GiftGasTask, task.GiftGasProcessor(
 		custodialContainer.celoProvider,
-		custodialContainer.noncestore,
 		custodialContainer.lockProvider,
+		custodialContainer.noncestore,
+		custodialContainer.pgStore,
 		custodialContainer.systemContainer,
 		custodialContainer.taskerClient,
+		js,
 	))
 	taskerServer.RegisterHandlers(tasker.GiftTokenTask, task.GiftTokenProcessor(
 		custodialContainer.celoProvider,
-		custodialContainer.noncestore,
 		custodialContainer.lockProvider,
+		custodialContainer.noncestore,
+		custodialContainer.pgStore,
 		custodialContainer.systemContainer,
 		custodialContainer.taskerClient,
+		js,
 	))
-	taskerServer.RegisterHandlers(tasker.RefillGasTask, task.RefillGasProcessor(
+	taskerServer.RegisterHandlers(tasker.SignTransferTask, task.SignTransfer(
 		custodialContainer.celoProvider,
-		custodialContainer.noncestore,
+		custodialContainer.keystore,
 		custodialContainer.lockProvider,
+		custodialContainer.noncestore,
+		custodialContainer.pgStore,
 		custodialContainer.systemContainer,
 		custodialContainer.taskerClient,
+		js,
 	))
 	taskerServer.RegisterHandlers(tasker.TxDispatchTask, task.TxDispatch(
 		custodialContainer.celoProvider,
+		custodialContainer.pgStore,
+		js,
 	))
 
 	return taskerServer

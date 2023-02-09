@@ -50,7 +50,7 @@ func SignTransferHandler(
 		}
 
 		_, err = taskerClient.CreateTask(
-			tasker.TransferTokenTask,
+			tasker.SignTransferTask,
 			tasker.HighPriority,
 			&tasker.Task{
 				Id:      transferRequest.TrackingId,

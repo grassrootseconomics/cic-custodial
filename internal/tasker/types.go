@@ -42,7 +42,7 @@ const (
 	RefillGasTask          TaskName = "admin:refill_gas"
 	SweepGasTask           TaskName = "admin:sweep_gas"
 	AdminTokenApprovalTask TaskName = "admin:token_approval"
-	TransferTokenTask      TaskName = "usr:transfer_token"
+	SignTransferTask       TaskName = "usr:sign_transfer"
 	TxDispatchTask         TaskName = "rpc:dispatch"
 )
 
