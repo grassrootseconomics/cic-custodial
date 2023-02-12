@@ -13,7 +13,7 @@ type Validator struct {
 
 func (v *Validator) Validate(i interface{}) error {
 	if err := v.ValidatorProvider.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, errResp{
+		return echo.NewHTTPError(http.StatusBadRequest, ErrResp{
 			Ok:   false,
 			Code: VALIDATION_ERROR,
 		})

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/labstack/echo/v4"
 )
@@ -22,8 +23,9 @@ func SignTransferHandler(
 	taskerClient *tasker.TaskerClient,
 ) func(echo.Context) error {
 	return func(c echo.Context) error {
+		trackingId := uuid.NewString()
+
 		var transferRequest struct {
-			TrackingId     string `json:"trackingId" validate:"required"`
 			From           string `json:"from" validate:"required,eth_addr"`
 			To             string `json:"to" validate:"required,eth_addr"`
 			VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr"`
@@ -31,10 +33,7 @@ func SignTransferHandler(
 		}
 
 		if err := c.Bind(&transferRequest); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
 		if err := c.Validate(transferRequest); err != nil {
@@ -43,29 +42,26 @@ func SignTransferHandler(
 
 		taskPayload, err := json.Marshal(transferRequest)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
 		_, err = taskerClient.CreateTask(
 			tasker.SignTransferTask,
 			tasker.HighPriority,
 			&tasker.Task{
-				Id:      transferRequest.TrackingId,
+				Id:      trackingId,
 				Payload: taskPayload,
 			},
 		)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
-		return c.JSON(http.StatusOK, okResp{
+		return c.JSON(http.StatusOK, OkResp{
 			Ok: true,
+			Result: H{
+				"trackingId": trackingId,
+			},
 		})
 	}
 }

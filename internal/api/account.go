@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
+	"github.com/google/uuid"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker/task"
@@ -13,76 +14,50 @@ import (
 
 // CreateAccountHandler route.
 // POST: /api/account/create
-// JSON Body:
-// trackingId -> Unique string
 // Returns the public key.
 func CreateAccountHandler(
 	keystore keystore.Keystore,
 	taskerClient *tasker.TaskerClient,
 ) func(echo.Context) error {
 	return func(c echo.Context) error {
-		var accountRequest struct {
-			TrackingId string `json:"trackingId" validate:"required"`
-		}
-
-		if err := c.Bind(&accountRequest); err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
-		}
-
-		if err := c.Validate(accountRequest); err != nil {
-			return err
-		}
+		trackingId := uuid.NewString()
 
 		generatedKeyPair, err := keypair.Generate()
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
 		id, err := keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
 		taskPayload, err := json.Marshal(task.AccountPayload{
 			PublicKey:  generatedKeyPair.Public,
-			TrackingId: accountRequest.TrackingId,
+			TrackingId: trackingId,
 		})
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
 		_, err = taskerClient.CreateTask(
 			tasker.PrepareAccountTask,
 			tasker.DefaultPriority,
 			&tasker.Task{
-				Id:      accountRequest.TrackingId,
+				Id:      trackingId,
 				Payload: taskPayload,
 			},
 		)
 		if err != nil {
-			return echo.NewHTTPError(http.StatusInternalServerError, errResp{
-				Ok:   false,
-				Code: INTERNAL_ERROR,
-			})
+			return err
 		}
 
-		return c.JSON(http.StatusOK, okResp{
+		return c.JSON(http.StatusOK, OkResp{
 			Ok: true,
 			Result: H{
 				"publicKey":   generatedKeyPair.Public,
 				"custodialId": id,
+				"trackingId":  trackingId,
 			},
 		})
 	}

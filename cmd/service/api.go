@@ -1,9 +1,13 @@
 package main
 
 import (
+	"errors"
+	"net/http"
+
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-playground/validator"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
+	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
 )
 
@@ -13,6 +17,27 @@ func initApiServer(custodialContainer *custodial) *echo.Echo {
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
+
+	server.HTTPErrorHandler = func(err error, c echo.Context) {
+		// Handle asynq duplication errors across all api handlers.
+		if errors.Is(err, asynq.ErrTaskIDConflict) {
+			c.JSON(http.StatusForbidden, api.ErrResp{
+				Ok:      false,
+				Code:    api.DUPLICATE_ERROR,
+				Message: "Request with duplicate tracking id submitted.",
+			})
+			return
+		}
+
+		// Log internal server error for further investigation.
+		lo.Error("api:", "path", c.Path(), "err", err)
+
+		c.JSON(http.StatusInternalServerError, api.ErrResp{
+			Ok:      false,
+			Code:    api.INTERNAL_ERROR,
+			Message: "Internal server error.",
+		})
+	}
 
 	if ko.Bool("service.metrics") {
 		server.GET("/metrics", func(c echo.Context) error {
