@@ -2,11 +2,11 @@ package task
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"math/big"
 
 	"github.com/bsm/redislock"
+	"github.com/celo-org/celo-blockchain/common/hexutil"
 	celo "github.com/grassrootseconomics/cic-celo-sdk"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
@@ -108,12 +108,14 @@ func SignTransfer(
 		}
 
 		id, err := pg.CreateOTX(ctx, store.OTX{
-			RawTx:    hex.EncodeToString(rawTx),
-			TxHash:   builtTx.Hash().Hex(),
-			From:     p.From,
-			Data:     string(builtTx.Data()),
-			GasPrice: builtTx.GasPrice().Uint64(),
-			Nonce:    builtTx.Nonce(),
+			TrackingId: p.TrackingId,
+			Type:       "TRANSFER",
+			RawTx:      hexutil.Encode(rawTx),
+			TxHash:     builtTx.Hash().Hex(),
+			From:       p.From,
+			Data:       hexutil.Encode(builtTx.Data()),
+			GasPrice:   builtTx.GasPrice().Uint64(),
+			Nonce:      builtTx.Nonce(),
 		})
 		if err != nil {
 			if err := noncestore.Return(ctx, p.From); err != nil {
@@ -124,9 +126,8 @@ func SignTransfer(
 		}
 
 		disptachJobPayload, err := json.Marshal(TxPayload{
-			OtxId:      id,
-			TrackingId: p.TrackingId,
-			Tx:         builtTx,
+			OtxId: id,
+			Tx:    builtTx,
 		})
 		if err != nil {
 			if err := noncestore.Return(ctx, p.From); err != nil {

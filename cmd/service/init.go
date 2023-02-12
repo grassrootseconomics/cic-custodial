@@ -66,7 +66,8 @@ func initCeloProvider() (*celo.Provider, error) {
 	}
 
 	if ko.Bool("chain.testnet") {
-		providerOpts.ChainId = celo.TestnetChainId
+		// Devnet = 1337
+		providerOpts.ChainId = 1337
 	} else {
 		providerOpts.ChainId = celo.MainnetChainId
 	}

@@ -16,7 +16,6 @@ func (s *PostgresStore) CreateDispatchStatus(ctx context.Context, dispatch Dispa
 		s.queries.CreateDispatchStatus,
 		dispatch.OtxId,
 		dispatch.Status,
-		dispatch.TrackingId,
 	).Scan(&id); err != nil {
 		return id, err
 	}

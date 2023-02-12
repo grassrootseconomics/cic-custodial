@@ -22,6 +22,10 @@ func initAbis() map[string]*w3.Func {
 		"transfer": w3.MustNewFunc("transfer(address,uint256)", "bool"),
 		// Keccak hash -> 0x23b872dd
 		"transferFrom": w3.MustNewFunc("transferFrom(address, address, uint256)", "bool"),
+		// Add to account index
+		"add": w3.MustNewFunc("add(address)", "bool"),
+		// giveTo gas refill
+		"giveTo": w3.MustNewFunc("giveTo(address)", "uint256"),
 	}
 }
 
@@ -31,6 +35,8 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) (*tas
 	// Some custodial system defaults loaded from the config file.
 	systemContainer := &tasker.SystemContainer{
 		Abis:                  initAbis(),
+		AccountIndexContract:  w3.A(ko.MustString("system.account_index")),
+		GasFaucetContract:     w3.A(ko.MustString("system.gas_faucet")),
 		GasRefillThreshold:    big.NewInt(ko.MustInt64("system.gas_refill_threshold")),
 		GasRefillValue:        big.NewInt(ko.MustInt64("system.gas_refill_value")),
 		GiftableGasValue:      big.NewInt(ko.MustInt64("system.giftable_gas_value")),

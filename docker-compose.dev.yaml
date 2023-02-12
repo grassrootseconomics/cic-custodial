@@ -30,6 +30,15 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+  nats:
+    image: nats:2.9
+    restart: unless-stopped
+    command: "-js -sd /nats/data"
+    volumes:
+      - cic-custodial-nats:/nats/data
+    ports:
+      - "4222:4222"
+      - "8222:8222"
   asynqmon:
     image: hibiken/asynqmon
     restart: unless-stopped
@@ -44,4 +53,6 @@ volumes:
   cic-custodial-pg:
     driver: local
   cic-custodial-redis:
+    driver: local
+  cic-custodial-nats:
     driver: local

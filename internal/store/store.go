@@ -8,19 +8,19 @@ import (
 
 type (
 	OTX struct {
+		TrackingId string
+		Type       string
 		RawTx      string
 		TxHash     string
 		From       string
 		Data       string
 		GasPrice   uint64
 		Nonce      uint64
-		TrackingId string
 	}
 
 	DispatchStatus struct {
-		OtxId      uint
-		Status     status.Status
-		TrackingId string
+		OtxId  uint
+		Status status.Status
 	}
 
 	Store interface {

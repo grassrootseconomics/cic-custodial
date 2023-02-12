@@ -10,13 +10,14 @@ func (s *PostgresStore) CreateOTX(ctx context.Context, otx OTX) (uint, error) {
 	if err := s.db.QueryRow(
 		ctx,
 		s.queries.CreateOTX,
+		otx.TrackingId,
+		otx.Type,
 		otx.RawTx,
 		otx.TxHash,
 		otx.From,
 		otx.Data,
 		otx.GasPrice,
 		otx.Nonce,
-		otx.TrackingId,
 	).Scan(&id); err != nil {
 		return id, err
 	}

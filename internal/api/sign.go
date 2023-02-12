@@ -24,7 +24,7 @@ func SignTransferHandler(
 	return func(c echo.Context) error {
 		var transferRequest struct {
 			TrackingId     string `json:"trackingId" validate:"required"`
-			From           string `json:"from" validate:"required,eth_address"`
+			From           string `json:"from" validate:"required,eth_addr"`
 			To             string `json:"to" validate:"required,eth_addr"`
 			VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr"`
 			Amount         int64  `json:"amount" validate:"required,numeric"`

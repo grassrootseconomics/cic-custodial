@@ -16,14 +16,13 @@ import (
 
 type (
 	TxPayload struct {
-		OtxId      uint               `json:"otxId"`
-		TrackingId string             `json:"trackingId"`
-		Tx         *types.Transaction `json:"tx"`
+		OtxId uint               `json:"otxId"`
+		Tx    *types.Transaction `json:"tx"`
 	}
 
 	dispatchEventPayload struct {
-		TrackingId string
-		TxHash     string
+		OtxId  uint
+		TxHash string
 	}
 )
 
@@ -44,12 +43,11 @@ func TxDispatch(
 		}
 
 		dispatchStatus := store.DispatchStatus{
-			OtxId:      p.OtxId,
-			TrackingId: p.TrackingId,
+			OtxId: p.OtxId,
 		}
 
 		eventPayload := &dispatchEventPayload{
-			TrackingId: p.TrackingId,
+			OtxId: p.OtxId,
 		}
 
 		if err := celoProvider.Client.CallCtx(
@@ -77,7 +75,12 @@ func TxDispatch(
 			return err
 		}
 
-		dispatchStatus.TrackingId = status.Successful
+		dispatchStatus.Status = status.Successful
+		_, err := pg.CreateDispatchStatus(ctx, dispatchStatus)
+		if err != nil {
+			return err
+		}
+
 		eventPayload.TxHash = txHash.Hex()
 
 		eventJson, err := json.Marshal(eventPayload)
@@ -85,7 +88,7 @@ func TxDispatch(
 			return err
 		}
 
-		_, err = js.Publish("CUSTODIAL.dispatchSuccessful", eventJson, nats.MsgId(txHash.Hex()))
+		_, err = js.Publish("CUSTODIAL.dispatchSuccess", eventJson, nats.MsgId(txHash.Hex()))
 		if err != nil {
 			return err
 		}

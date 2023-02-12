@@ -18,6 +18,7 @@ func initTasker(custodialContainer *custodial, redisPool *redis.RedisPool) *task
 	taskerServerOpts := tasker.TaskerServerOpts{
 		Concurrency:     ko.MustInt("asynq.worker_count"),
 		Logg:            lo,
+		LogLevel:        asynq.ErrorLevel,
 		RedisPool:       redisPool,
 		SystemContainer: custodialContainer.systemContainer,
 		TaskerClient:    custodialContainer.taskerClient,
@@ -31,6 +32,15 @@ func initTasker(custodialContainer *custodial, redisPool *redis.RedisPool) *task
 
 	taskerServer.RegisterHandlers(tasker.PrepareAccountTask, task.PrepareAccount(
 		custodialContainer.noncestore,
+		custodialContainer.taskerClient,
+		js,
+	))
+	taskerServer.RegisterHandlers(tasker.RegisterAccountOnChain, task.RegisterAccountOnChainProcessor(
+		custodialContainer.celoProvider,
+		custodialContainer.lockProvider,
+		custodialContainer.noncestore,
+		custodialContainer.pgStore,
+		custodialContainer.systemContainer,
 		custodialContainer.taskerClient,
 		js,
 	))

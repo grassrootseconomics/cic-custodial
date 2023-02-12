@@ -1,5 +1,5 @@
 [service]
-address = ":5000"
+address = ":5005"
 # Exposes Prometheus metrics
 # /metrics endpoint
 metrics = true
@@ -7,26 +7,26 @@ metrics = true
 # System default values
 # Valus are in wei unless otherwise stated
 [system]
-# Any account below 1 KES equivalent of CELO is topped up again
-# 10000000000000000 = 1 KES
-gas_refill_threshold = 10000000000000000
-gas_refill_value = 10000000000000000
-# Every custodial account is given 2 KES worth of CELO
-giftable_gas_value = 20000000000000000
 # The giftable token is a training voucher
 # Every new user is given 5 DGFT
-giftable_token_address = "0x486aD10d70107900546455F7a0e022c300F157Bf"
+gas_faucet = "0x6dE38F79Cf455339e8141D15E208ba09eea634e1"
+giftable_token_address = "0x4091fc149522d5FE31d0970687078B1aE0625892"
 giftable_token_value = 5000000
+gas_refill_threshold = 100000000000000000
+gas_refill_value = 100000000000000000
+# Every custodial account is given 2 KES worth of CELO
+giftable_gas_value = 2000000000000000000
 # System private key
 # Should always be toped up
-private_key = "a6af6c597c614e3c8ee4b7638ab7c3f737aece3773a5413ca8caf4338e6b06d1"
+private_key = "d87f322629cf071ccd3ddf17ab5e1abf098a25c4c5d791d7535d265379b2ae37"
 lock_prefix = "lock:"
-public_key = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
+public_key = "0xe5ab7A5af1f28aA8E9658AC33a6ebF2a8641d948"
 token_decimals = 6
-token_transfer_gas_limit = 100000
+token_transfer_gas_limit = 200000
+account_index = "0x70138F458Fa56C034acb19E38d082843327F18A4"
 
 [chain]
-rpc_endpoint = "https://alfajores-forno.celo-testnet.org"
+rpc_endpoint = "http://192.168.0.101:8545"
 testnet = true
 
 [postgres]
@@ -43,3 +43,22 @@ worker_count = 15
 debug = false
 dsn = "redis://localhost:6379/0"
 task_retention_hrs = 24
+
+# https://docs.nats.io/
+[jetstream]
+endpoint               = "nats://localhost:4222"
+stream_name            = "CUSTODIAL"
+# Duration JetStream should keep the message before remocing it from the persistent store
+persist_duration_hours = 48
+# Duration to ignore duplicate transactions (e.g. due to restart)
+dedup_duration_hours   = 6
+# Stream subjects
+stream_subjects        = [
+    "CUSTODIAL.accountNewNonce",
+    "CUSTODIAL.accountRegister",
+    "CUSTODIAL.giftNewAccountGas",
+    "CUSTODIAL.giftNewAccountVoucher",
+    "CUSTODIAL.dispatchFail",
+    "CUSTODIAL.dispatchSuccess",
+    "CUSTODIAL.transferSign"
+]

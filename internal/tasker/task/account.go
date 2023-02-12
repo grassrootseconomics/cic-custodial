@@ -2,12 +2,12 @@ package task
 
 import (
 	"context"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
 
 	"github.com/bsm/redislock"
+	"github.com/celo-org/celo-blockchain/common/hexutil"
 	celo "github.com/grassrootseconomics/cic-celo-sdk"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
@@ -30,9 +30,9 @@ type (
 )
 
 func PrepareAccount(
-	js nats.JetStreamContext,
 	noncestore nonce.Noncestore,
 	taskerClient *tasker.TaskerClient,
+	js nats.JetStreamContext,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
@@ -48,7 +48,7 @@ func PrepareAccount(
 		}
 
 		_, err := taskerClient.CreateTask(
-			tasker.GiftGasTask,
+			tasker.RegisterAccountOnChain,
 			tasker.DefaultPriority,
 			&tasker.Task{
 				Payload: t.Payload(),
@@ -87,14 +87,153 @@ func PrepareAccount(
 	}
 }
 
-func GiftGasProcessor(
+func RegisterAccountOnChainProcessor(
 	celoProvider *celo.Provider,
-	js nats.JetStreamContext,
 	lockProvider *redislock.Client,
 	noncestore nonce.Noncestore,
 	pg store.Store,
 	system *tasker.SystemContainer,
 	taskerClient *tasker.TaskerClient,
+	js nats.JetStreamContext,
+) func(context.Context, *asynq.Task) error {
+	return func(ctx context.Context, t *asynq.Task) error {
+		var (
+			p AccountPayload
+		)
+
+		if err := json.Unmarshal(t.Payload(), &p); err != nil {
+			return err
+		}
+
+		lock, err := lockProvider.Obtain(ctx, system.LockPrefix+system.PublicKey, system.LockTimeout, nil)
+		if err != nil {
+			return err
+		}
+		defer lock.Release(ctx)
+
+		nonce, err := noncestore.Acquire(ctx, system.PublicKey)
+		if err != nil {
+			return err
+		}
+
+		input, err := system.Abis["add"].EncodeArgs(w3.A(p.PublicKey))
+		if err != nil {
+			return err
+		}
+
+		// TODO: Review gas params.
+		builtTx, err := celoProvider.SignContractExecutionTx(
+			system.PrivateKey,
+			celo.ContractExecutionTxOpts{
+				ContractAddress: system.AccountIndexContract,
+				InputData:       input,
+				GasPrice:        big.NewInt(20000000000),
+				GasLimit:        system.TokenTransferGasLimit,
+				Nonce:           nonce,
+			},
+		)
+		if err != nil {
+			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
+				return err
+			}
+			return err
+		}
+
+		rawTx, err := builtTx.MarshalBinary()
+		if err != nil {
+			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
+				return err
+			}
+
+			return err
+		}
+
+		id, err := pg.CreateOTX(ctx, store.OTX{
+			TrackingId: p.TrackingId,
+			Type:       "ACCOUNT_REGISTER",
+			RawTx:      hexutil.Encode(rawTx),
+			TxHash:     builtTx.Hash().Hex(),
+			From:       system.PublicKey,
+			Data:       hexutil.Encode(builtTx.Data()),
+			GasPrice:   builtTx.GasPrice().Uint64(),
+			Nonce:      builtTx.Nonce(),
+		})
+		if err != nil {
+			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
+				return err
+			}
+
+			return err
+		}
+
+		disptachJobPayload, err := json.Marshal(TxPayload{
+			OtxId: id,
+			Tx:    builtTx,
+		})
+		if err != nil {
+			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
+				return err
+			}
+
+			return err
+		}
+
+		_, err = taskerClient.CreateTask(
+			tasker.TxDispatchTask,
+			tasker.HighPriority,
+			&tasker.Task{
+				Payload: disptachJobPayload,
+			},
+		)
+		if err != nil {
+			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
+				return err
+			}
+
+			return err
+		}
+
+		_, err = taskerClient.CreateTask(
+			tasker.GiftGasTask,
+			tasker.DefaultPriority,
+			&tasker.Task{
+				Payload: t.Payload(),
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		eventPayload := &accountEventPayload{
+			TrackingId: p.TrackingId,
+		}
+
+		eventJson, err := json.Marshal(eventPayload)
+		if err != nil {
+			return err
+		}
+
+		_, err = js.Publish("CUSTODIAL.accountRegister", eventJson)
+		if err != nil {
+			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
+				return err
+			}
+
+			return err
+		}
+
+		return nil
+	}
+}
+
+func GiftGasProcessor(
+	celoProvider *celo.Provider,
+	lockProvider *redislock.Client,
+	noncestore nonce.Noncestore,
+	pg store.Store,
+	system *tasker.SystemContainer,
+	taskerClient *tasker.TaskerClient,
+	js nats.JetStreamContext,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
@@ -144,12 +283,14 @@ func GiftGasProcessor(
 		}
 
 		id, err := pg.CreateOTX(ctx, store.OTX{
-			RawTx:    hex.EncodeToString(rawTx),
-			TxHash:   builtTx.Hash().Hex(),
-			From:     system.PublicKey,
-			Data:     string(builtTx.Data()),
-			GasPrice: builtTx.GasPrice().Uint64(),
-			Nonce:    builtTx.Nonce(),
+			TrackingId: p.TrackingId,
+			Type:       "GIFT_GAS",
+			RawTx:      hexutil.Encode(rawTx),
+			TxHash:     builtTx.Hash().Hex(),
+			From:       system.PublicKey,
+			Data:       hexutil.Encode(builtTx.Data()),
+			GasPrice:   builtTx.GasPrice().Uint64(),
+			Nonce:      builtTx.Nonce(),
 		})
 		if err != nil {
 			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
@@ -160,9 +301,8 @@ func GiftGasProcessor(
 		}
 
 		disptachJobPayload, err := json.Marshal(TxPayload{
-			OtxId:      id,
-			TrackingId: p.TrackingId,
-			Tx:         builtTx,
+			OtxId: id,
+			Tx:    builtTx,
 		})
 		if err != nil {
 			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
@@ -211,12 +351,12 @@ func GiftGasProcessor(
 
 func GiftTokenProcessor(
 	celoProvider *celo.Provider,
-	js nats.JetStreamContext,
 	lockProvider *redislock.Client,
 	noncestore nonce.Noncestore,
 	pg store.Store,
 	system *tasker.SystemContainer,
 	taskerClient *tasker.TaskerClient,
+	js nats.JetStreamContext,
 ) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
@@ -271,12 +411,14 @@ func GiftTokenProcessor(
 		}
 
 		id, err := pg.CreateOTX(ctx, store.OTX{
-			RawTx:    hex.EncodeToString(rawTx),
-			TxHash:   builtTx.Hash().Hex(),
-			From:     system.PublicKey,
-			Data:     string(builtTx.Data()),
-			GasPrice: builtTx.GasPrice().Uint64(),
-			Nonce:    builtTx.Nonce(),
+			TrackingId: p.TrackingId,
+			Type:       "GIFT_VOUCHER",
+			RawTx:      hexutil.Encode(rawTx),
+			TxHash:     builtTx.Hash().Hex(),
+			From:       system.PublicKey,
+			Data:       hexutil.Encode(builtTx.Data()),
+			GasPrice:   builtTx.GasPrice().Uint64(),
+			Nonce:      builtTx.Nonce(),
 		})
 		if err != nil {
 			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
@@ -287,9 +429,8 @@ func GiftTokenProcessor(
 		}
 
 		disptachJobPayload, err := json.Marshal(TxPayload{
-			OtxId:      id,
-			TrackingId: p.TrackingId,
-			Tx:         builtTx,
+			OtxId: id,
+			Tx:    builtTx,
 		})
 		if err != nil {
 			if err := noncestore.Return(ctx, system.PublicKey); err != nil {
