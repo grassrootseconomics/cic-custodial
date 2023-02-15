@@ -14,7 +14,7 @@ require (
 	github.com/hibiken/asynq v0.24.0
 	github.com/jackc/pgx/v5 v5.3.0
 	github.com/knadh/goyesql/v2 v2.2.0
-	github.com/knadh/koanf v1.4.5
+	github.com/knadh/koanf v1.5.0
 	github.com/labstack/echo/v4 v4.10.0
 	github.com/nats-io/nats.go v1.23.0
 	github.com/zerodha/logf v0.5.5
