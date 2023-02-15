@@ -5,12 +5,12 @@ go 1.19
 require (
 	github.com/VictoriaMetrics/metrics v1.23.1
 	github.com/bsm/redislock v0.7.2
-	github.com/celo-org/celo-blockchain v1.6.1
+	github.com/celo-org/celo-blockchain v1.7.2
 	github.com/go-playground/validator v9.31.0+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
-	github.com/grassrootseconomics/cic-celo-sdk v0.3.1
-	github.com/grassrootseconomics/w3-celo-patch v0.1.0
+	github.com/grassrootseconomics/cic-celo-sdk v0.4.0
+	github.com/grassrootseconomics/w3-celo-patch v0.2.0
 	github.com/hibiken/asynq v0.24.0
 	github.com/jackc/pgx/v5 v5.2.0
 	github.com/knadh/goyesql/v2 v2.2.0
