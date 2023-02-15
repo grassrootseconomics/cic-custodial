@@ -3,49 +3,52 @@ package keystore
 import (
 	"context"
 	"crypto/ecdsa"
-	"fmt"
 
 	eth_crypto "github.com/celo-org/celo-blockchain/crypto"
+	"github.com/grassrootseconomics/cic-custodial/internal/queries"
 	"github.com/grassrootseconomics/cic-custodial/pkg/keypair"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/zerodha/logf"
 )
 
-type Opts struct {
-	PostgresPool *pgxpool.Pool
-	Logg         logf.Logger
-}
-
-type PostgresKeystore struct {
-	db *pgxpool.Pool
-}
-
-func NewPostgresKeytore(o Opts) (Keystore, error) {
-	if err := applyMigration(o.PostgresPool); err != nil {
-		return nil, fmt.Errorf("keystore migration failed %v", err)
+type (
+	Opts struct {
+		PostgresPool *pgxpool.Pool
+		Queries      *queries.Queries
 	}
-	o.Logg.Info("Successfully ran keystore migrations")
 
+	PostgresKeystore struct {
+		db      *pgxpool.Pool
+		queries *queries.Queries
+	}
+)
+
+func NewPostgresKeytore(o Opts) Keystore {
 	return &PostgresKeystore{
-		db: o.PostgresPool,
-	}, nil
+		db:      o.PostgresPool,
+		queries: o.Queries,
+	}
 }
 
-func (ks *PostgresKeystore) WriteKeyPair(ctx context.Context, keypair keypair.Key) error {
-	_, err := ks.db.Exec(ctx, "INSERT INTO keystore(public_key, private_key) VALUES($1, $2)", keypair.Public, keypair.Private)
-	if err != nil {
-		return err
+// WriteKeyPair inserts a keypair into the db and returns the linked id.
+func (ks *PostgresKeystore) WriteKeyPair(ctx context.Context, keypair keypair.Key) (uint, error) {
+	var (
+		id uint
+	)
+
+	if err := ks.db.QueryRow(ctx, ks.queries.WriteKeyPair, keypair.Public, keypair.Private).Scan(&id); err != nil {
+		return id, err
 	}
 
-	return nil
+	return id, nil
 }
 
+// LoadPrivateKey loads a private key as a crypto primitive for direct use. An id is used to search for the private key.
 func (ks *PostgresKeystore) LoadPrivateKey(ctx context.Context, publicKey string) (*ecdsa.PrivateKey, error) {
 	var (
 		privateKeyString string
 	)
 
-	if err := ks.db.QueryRow(ctx, "SELECT private_key FROM keystore WHERE public_key=$1", publicKey).Scan(&privateKeyString); err != nil {
+	if err := ks.db.QueryRow(ctx, ks.queries.LoadKeyPair, publicKey).Scan(&privateKeyString); err != nil {
 		return nil, err
 	}
 

@@ -1,4 +1,4 @@
-version: '3.9'
+version: "3.9"
 services:
   redis:
     image: redis:6-alpine
@@ -7,12 +7,12 @@ services:
     volumes:
       - cic-custodial-redis:/data
     ports:
-      - '6379:6379'
+      - "127.0.0.1:6379:6379"
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
       interval: 10s
       timeout: 5s
-      retries: 5      
+      retries: 5
   postgres:
     image: postgres:14-alpine
     restart: unless-stopped
@@ -24,36 +24,35 @@ services:
     volumes:
       - cic-custodial-pg:/var/lib/postgresql/data
     ports:
-      - '5432:5432'
+      - "127.0.0.1:5432:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready"]
       interval: 10s
       timeout: 5s
       retries: 5
+  nats:
+    image: nats:2.9
+    restart: unless-stopped
+    command: "-js -sd /nats/data"
+    volumes:
+      - cic-custodial-nats:/nats/data
+    ports:
+      - "4222:4222"
+      - "8222:8222"
   asynqmon:
     image: hibiken/asynqmon
     restart: unless-stopped
     environment:
       - REDIS_ADDR=redis:6379
     ports:
-      - '8080:8080'
+      - "127.0.0.1:8080:8080"
     depends_on:
-      redis: 
-        condition: service_healthy      
-  cic-custodial:
-    image: ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:latest
-    restart: unless-stopped
-    depends_on:
-      postgres: 
+      redis:
         condition: service_healthy
-      redis: 
-        condition: service_healthy        
-    env_file:
-      - .env
-    ports:
-      - '5000:5000'
 volumes:
   cic-custodial-pg:
     driver: local
   cic-custodial-redis:
+    driver: local
+  cic-custodial-nats:
     driver: local

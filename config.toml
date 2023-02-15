@@ -1,33 +1,64 @@
 [service]
-address          = ":5000"
-statsviz_debug   = true
+address = ":5005"
+# Exposes Prometheus metrics
+# /metrics endpoint
+metrics = true
 
+# System default values
+# Valus are in wei unless otherwise stated
 [system]
-gas_refill_threshold     = 100000000000000
-gas_refill_value         = 100000000000000
-giftable_gas_value       = 200000000000000
-giftable_token_address   = "0x486aD10d70107900546455F7a0e022c300F157Bf"
-giftable_token_value     = 5000000000000000000
-private_key              = "a6af6c597c614e3c8ee4b7638ab7c3f737aece3773a5413ca8caf4338e6b06d1"
-lock_prefix              = "lock:"
-public_key               = "0x80097c773B3E83472FC7952c5206a7DB35d42bEF"
-token_decimals           = 18
-token_transfer_gas_limit = 100000
+# The giftable token is a training voucher
+# Every new user is given 5 DGFT
+gas_faucet = "0xA8b3Ffc715e85792FB361BDee9357B38D5A4a6cF"
+giftable_token_address = "0xdD4F5ea484F6b16f031eF7B98F3810365493BC20"
+giftable_token_value = 5000000
+gas_refill_threshold = 100000000000000000
+gas_refill_value = 100000000000000000
+# Every custodial account is given 2 KES worth of CELO
+giftable_gas_value = 2000000000000000000
+# System private key
+# Should always be toped up
+private_key = "bfa7222a7bea3bde312434abe819b14cf3bc8703ceaabb98a9e3a97ceb0b79fd"
+lock_prefix = "lock:"
+public_key = "0x08eb3a90128D5874da54cf654fCfA88cEd1bb047"
+token_decimals = 6
+token_transfer_gas_limit = 200000
+account_index = "0xdb2550ac5E52A54B6189FFAf17ECfF33AE190db9"
 
 [chain]
-rpc_endpoint = "https://alfajores-forno.celo-testnet.org"
-testnet      = true
+rpc_endpoint = "http://192.168.0.101:8545"
+testnet = true
 
 [postgres]
 debug = false
-dsn   = "postgres://postgres:postgres@localhost:5432/cic_custodial"
+dsn = "postgres://postgres:postgres@localhost:5432/cic_custodial"
 
 [redis]
-debug   = false
-dsn     = "redis://localhost:6379/1"
-minconn = 5
+debug = false
+dsn = "redis://localhost:6379/1"
+min_idle_conn = 5
 
 [asynq]
-concurrency = 25
-debug       = false
-dsn         = "redis://redis:6379/0"
+worker_count = 15
+debug = false
+dsn = "redis://localhost:6379/0"
+task_retention_hrs = 24
+
+# https://docs.nats.io/
+[jetstream]
+endpoint               = "nats://localhost:4222"
+stream_name            = "CUSTODIAL"
+# Duration JetStream should keep the message before remocing it from the persistent store
+persist_duration_hours = 48
+# Duration to ignore duplicate transactions (e.g. due to restart)
+dedup_duration_hours   = 6
+# Stream subjects
+stream_subjects        = [
+    "CUSTODIAL.accountNewNonce",
+    "CUSTODIAL.accountRegister",
+    "CUSTODIAL.giftNewAccountGas",
+    "CUSTODIAL.giftNewAccountVoucher",
+    "CUSTODIAL.dispatchFail",
+    "CUSTODIAL.dispatchSuccess",
+    "CUSTODIAL.transferSign"
+]

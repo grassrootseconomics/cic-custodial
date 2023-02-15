@@ -73,6 +73,7 @@ func (ts *TaskerServer) Stop() {
 
 func expectedFailures(err error) bool {
 	switch err {
+	// Ignore lock contention errors; retry until lock obtain.
 	case redislock.ErrNotObtained:
 		return false
 	default:
@@ -80,6 +81,7 @@ func expectedFailures(err error) bool {
 	}
 }
 
+// Immidiatel
 func retryDelay(count int, err error, task *asynq.Task) time.Duration {
 	if count < fixedRetryCount {
 		return fixedRetryPeriod

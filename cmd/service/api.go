@@ -1,0 +1,64 @@
+package main
+
+import (
+	"errors"
+	"net/http"
+
+	"github.com/VictoriaMetrics/metrics"
+	"github.com/go-playground/validator"
+	"github.com/grassrootseconomics/cic-custodial/internal/api"
+	"github.com/hibiken/asynq"
+	"github.com/labstack/echo/v4"
+)
+
+// Bootstrap API server.
+func initApiServer(custodialContainer *custodial) *echo.Echo {
+	lo.Debug("api: bootstrapping api server")
+	server := echo.New()
+	server.HideBanner = true
+	server.HidePort = true
+
+	server.HTTPErrorHandler = func(err error, c echo.Context) {
+		// Handle asynq duplication errors across all api handlers.
+		if errors.Is(err, asynq.ErrTaskIDConflict) {
+			c.JSON(http.StatusForbidden, api.ErrResp{
+				Ok:      false,
+				Code:    api.DUPLICATE_ERROR,
+				Message: "Request with duplicate tracking id submitted.",
+			})
+			return
+		}
+
+		// Log internal server error for further investigation.
+		lo.Error("api:", "path", c.Path(), "err", err)
+
+		c.JSON(http.StatusInternalServerError, api.ErrResp{
+			Ok:      false,
+			Code:    api.INTERNAL_ERROR,
+			Message: "Internal server error.",
+		})
+	}
+
+	if ko.Bool("service.metrics") {
+		server.GET("/metrics", func(c echo.Context) error {
+			metrics.WritePrometheus(c.Response(), true)
+			return nil
+		})
+	}
+
+	server.Validator = &api.Validator{
+		ValidatorProvider: validator.New(),
+	}
+
+	apiRoute := server.Group("/api")
+	apiRoute.POST("/account/create", api.CreateAccountHandler(
+		custodialContainer.keystore,
+		custodialContainer.taskerClient,
+	))
+
+	apiRoute.POST("/sign/transfer", api.SignTransferHandler(
+		custodialContainer.taskerClient,
+	))
+
+	return server
+}
