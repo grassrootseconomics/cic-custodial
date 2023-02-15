@@ -3,6 +3,7 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 
 	"github.com/celo-org/celo-blockchain/common"
 	"github.com/celo-org/celo-blockchain/core/types"
@@ -21,8 +22,9 @@ type (
 	}
 
 	dispatchEventPayload struct {
-		OtxId  uint
-		TxHash string
+		OtxId          uint
+		TxHash         string
+		DispatchStatus status.Status
 	}
 )
 
@@ -54,8 +56,16 @@ func TxDispatch(
 			ctx,
 			eth.SendTx(p.Tx).Returns(&txHash),
 		); err != nil {
-			// TODO: Coreect error status
-			dispatchStatus.Status = status.FailGasPrice
+			switch err.Error() {
+			case celo.ErrGasPriceLow:
+				dispatchStatus.Status = status.FailGasPrice
+			case celo.ErrInsufficientGas:
+				dispatchStatus.Status = status.FailInsufficientGas
+			case celo.ErrNonceLow:
+				dispatchStatus.Status = status.FailNonce
+			default:
+				dispatchStatus.Status = status.Unknown
+			}
 
 			_, err := pg.CreateDispatchStatus(ctx, dispatchStatus)
 			if err != nil {
@@ -72,7 +82,7 @@ func TxDispatch(
 				return err
 			}
 
-			return err
+			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 		}
 
 		dispatchStatus.Status = status.Successful
