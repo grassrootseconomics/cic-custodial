@@ -9,22 +9,14 @@ import (
 
 type PostgresPoolOpts struct {
 	DSN string
-	// Debug bool
-	// Logg  tracelog.Logger
 }
 
+// NewPostgresPool creates a reusbale connection pool across the cic-custodial component.
 func NewPostgresPool(o PostgresPoolOpts) (*pgxpool.Pool, error) {
 	parsedConfig, err := pgxpool.ParseConfig(o.DSN)
 	if err != nil {
 		return nil, err
 	}
-
-	// if o.Debug {
-	// 	parsedConfig.ConnConfig.Tracer = &tracelog.TraceLog{
-	// 		Logger:   o.Logg,
-	// 		LogLevel: tracelog.LogLevelDebug,
-	// 	}
-	// }
 
 	dbPool, err := pgxpool.NewWithConfig(context.Background(), parsedConfig)
 	if err != nil {

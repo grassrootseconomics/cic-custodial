@@ -6,6 +6,7 @@ type AsynqLogg struct {
 	logg *logf.Logger
 }
 
+// NewAsynqLogg creates a logf based logging adapter for asynq.
 func NewAsynqLogg(lo logf.Logger) AsynqLogg {
 	return AsynqLogg{
 		logg: &lo,

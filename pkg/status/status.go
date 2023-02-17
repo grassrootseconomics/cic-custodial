@@ -1,5 +1,7 @@
 package status
 
+// Status represents enum-like values received in the dispatcher from the RPC node.
+// It includes a subset of well-known and likely failures the dispatcher may encounter.
 type Status string
 
 const (

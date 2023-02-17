@@ -8,9 +8,7 @@ import (
 )
 
 type RedisPoolOpts struct {
-	DSN string
-	// Debug        bool
-	// Logg         logg.RedisLogg
+	DSN          string
 	MinIdleConns int
 }
 
@@ -18,6 +16,8 @@ type RedisPool struct {
 	Client *redis.Client
 }
 
+// NewRedisPool creates a reusable connection across the cic-custodial componenent.
+// Note: Each db namespace requires its own connection pool.
 func NewRedisPool(o RedisPoolOpts) (*RedisPool, error) {
 	redisOpts, err := redis.ParseURL(o.DSN)
 	if err != nil {
@@ -27,10 +27,6 @@ func NewRedisPool(o RedisPoolOpts) (*RedisPool, error) {
 	redisOpts.MinIdleConns = o.MinIdleConns
 
 	redisClient := redis.NewClient(redisOpts)
-
-	// if o.Debug {
-	// 	redis.SetLogger(o.Logg)
-	// }
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -45,6 +41,7 @@ func NewRedisPool(o RedisPoolOpts) (*RedisPool, error) {
 	}, nil
 }
 
+// Interface adapter for asynq to resuse the same Redis connection pool.
 func (r *RedisPool) MakeRedisClient() interface{} {
 	return r.Client
 }
