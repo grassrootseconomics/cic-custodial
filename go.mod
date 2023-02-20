@@ -6,16 +6,16 @@ require (
 	github.com/VictoriaMetrics/metrics v1.23.1
 	github.com/bsm/redislock v0.7.2
 	github.com/celo-org/celo-blockchain v1.7.2
-	github.com/go-playground/validator v9.31.0+incompatible
+	github.com/go-playground/validator/v10 v10.11.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
-	github.com/grassrootseconomics/cic-celo-sdk v0.4.0
+	github.com/grassrootseconomics/celoutils v1.0.0
 	github.com/grassrootseconomics/w3-celo-patch v0.2.0
 	github.com/hibiken/asynq v0.24.0
 	github.com/jackc/pgx/v5 v5.3.0
 	github.com/knadh/goyesql/v2 v2.2.0
 	github.com/knadh/koanf v1.5.0
-	github.com/labstack/echo/v4 v4.10.0
+	github.com/labstack/echo/v4 v4.10.1
 	github.com/nats-io/nats.go v1.23.0
 	github.com/zerodha/logf v0.5.5
 )
@@ -38,13 +38,11 @@ require (
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/go-playground/locales v0.14.1 // indirect
 	github.com/go-playground/universal-translator v0.18.1 // indirect
-	github.com/go-playground/validator/v10 v10.11.2 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
-	github.com/grassrootseconomics/celoutils v1.0.0 // indirect
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d // indirect
 	github.com/hdevalence/ed25519consensus v0.1.0 // indirect
 	github.com/holiman/bloomfilter/v2 v2.0.3 // indirect
@@ -54,11 +52,10 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jackc/puddle/v2 v2.2.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
-	github.com/knadh/koanf/v2 v2.0.0 // indirect
 	github.com/labstack/gommon v0.4.0 // indirect
 	github.com/leodido/go-urn v1.2.1 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
-	github.com/mattn/go-isatty v0.0.16 // indirect
+	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
@@ -85,13 +82,12 @@ require (
 	github.com/valyala/histogram v1.2.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	golang.org/x/crypto v0.6.0 // indirect
-	golang.org/x/net v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.5.0 // indirect
 	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/time v0.3.0 // indirect
 	google.golang.org/protobuf v1.28.0 // indirect
-	gopkg.in/go-playground/assert.v1 v1.2.1 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
