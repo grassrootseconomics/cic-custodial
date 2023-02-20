@@ -38,15 +38,13 @@ type Task struct {
 }
 
 const (
-	PrepareAccountTask     TaskName = "sys:prepare_account"
-	RegisterAccountOnChain TaskName = "sys:register_account"
-	GiftGasTask            TaskName = "sys:gift_gas"
-	GiftTokenTask          TaskName = "sys:gift_token"
-	RefillGasTask          TaskName = "admin:refill_gas"
-	SweepGasTask           TaskName = "admin:sweep_gas"
-	AdminTokenApprovalTask TaskName = "admin:token_approval"
+	AccountPrepareTask     TaskName = "sys:prepare_account"
+	AccountRegisterTask    TaskName = "sys:register_account"
+	AccountGiftGasTask     TaskName = "sys:gift_gas"
+	AccountGiftVoucherTask TaskName = "sys:gift_token"
+	AccountRefillGasTask   TaskName = "sys:refill_gas"
 	SignTransferTask       TaskName = "usr:sign_transfer"
-	TxDispatchTask         TaskName = "rpc:dispatch"
+	DispatchTxTask         TaskName = "rpc:dispatch"
 )
 
 const (

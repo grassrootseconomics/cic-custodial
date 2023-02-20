@@ -4,30 +4,30 @@ address = ":5005"
 # /metrics endpoint
 metrics = true
 
+[chain]
+rpc_endpoint = "https://rpc.alfajores.celo.grassecon.net"
+testnet = true
+
 # System default values
 # Valus are in wei unless otherwise stated
 [system]
 # The giftable token is a training voucher
 # Every new user is given 5 DGFT
-gas_faucet = "0xA8b3Ffc715e85792FB361BDee9357B38D5A4a6cF"
-giftable_token_address = "0xdD4F5ea484F6b16f031eF7B98F3810365493BC20"
+gas_faucet = "0xf2a1fc19Ad275A0EAe3445798761FeD1Eea725d5"
+giftable_token_address = "0xB92463E2262E700e29c16416270c9Fdfa17934D7"
 giftable_token_value = 5000000
-gas_refill_threshold = 100000000000000000
-gas_refill_value = 100000000000000000
+gas_refill_threshold = 20000000000000000
+gas_refill_value = 10000000000000000
 # Every custodial account is given 2 KES worth of CELO
-giftable_gas_value = 2000000000000000000
+giftable_gas_value = 10000000000000000
 # System private key
 # Should always be toped up
-private_key = "bfa7222a7bea3bde312434abe819b14cf3bc8703ceaabb98a9e3a97ceb0b79fd"
+private_key = "95f04bc8321cbf693db9cc2bc063411bbd8bee0e4a03dea096c755d8bcca42c6"
 lock_prefix = "lock:"
-public_key = "0x08eb3a90128D5874da54cf654fCfA88cEd1bb047"
+public_key = "0x0577AE5A3547AC753aC499E282557CE0275a4942"
 token_decimals = 6
 token_transfer_gas_limit = 200000
-account_index = "0xdb2550ac5E52A54B6189FFAf17ECfF33AE190db9"
-
-[chain]
-rpc_endpoint = "http://192.168.0.101:8545"
-testnet = true
+account_index = "0x1e041282695C66944BfC53cabce947cf35CEaf87"
 
 [postgres]
 debug = false
@@ -47,18 +47,7 @@ task_retention_hrs = 24
 # https://docs.nats.io/
 [jetstream]
 endpoint               = "nats://localhost:4222"
-stream_name            = "CUSTODIAL"
 # Duration JetStream should keep the message before remocing it from the persistent store
 persist_duration_hours = 48
 # Duration to ignore duplicate transactions (e.g. due to restart)
 dedup_duration_hours   = 6
-# Stream subjects
-stream_subjects        = [
-    "CUSTODIAL.accountNewNonce",
-    "CUSTODIAL.accountRegister",
-    "CUSTODIAL.giftNewAccountGas",
-    "CUSTODIAL.giftNewAccountVoucher",
-    "CUSTODIAL.dispatchFail",
-    "CUSTODIAL.dispatchSuccess",
-    "CUSTODIAL.transferSign"
-]

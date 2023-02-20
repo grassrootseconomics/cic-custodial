@@ -1,10 +1,8 @@
 package api
 
 import (
-	"net/http"
-
-	"github.com/go-playground/validator"
-	"github.com/labstack/echo/v4"
+	"github.com/celo-org/celo-blockchain/common"
+	"github.com/go-playground/validator/v10"
 )
 
 type Validator struct {
@@ -13,10 +11,16 @@ type Validator struct {
 
 func (v *Validator) Validate(i interface{}) error {
 	if err := v.ValidatorProvider.Struct(i); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, ErrResp{
-			Ok:   false,
-			Code: VALIDATION_ERROR,
-		})
+		return err
 	}
 	return nil
+}
+
+func EthChecksumValidator(fl validator.FieldLevel) bool {
+	addr, err := common.NewMixedcaseAddressFromString(fl.Field().String())
+	if err != nil {
+		return false
+	}
+
+	return addr.ValidChecksum()
 }

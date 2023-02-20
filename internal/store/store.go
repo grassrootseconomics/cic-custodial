@@ -27,6 +27,6 @@ type (
 		// OTX (Custodial originating transactions).
 		CreateOTX(ctx context.Context, otx OTX) (id uint, err error)
 		// Dispatch status.
-		CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) (id uint, err error)
+		CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) error
 	}
 )

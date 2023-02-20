@@ -3,7 +3,7 @@ package nonce
 import (
 	"context"
 
-	celo "github.com/grassrootseconomics/cic-celo-sdk"
+	"github.com/grassrootseconomics/celoutils"
 	redispool "github.com/grassrootseconomics/cic-custodial/pkg/redis"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
@@ -11,12 +11,12 @@ import (
 
 type Opts struct {
 	RedisPool    *redispool.RedisPool
-	CeloProvider *celo.Provider
+	CeloProvider *celoutils.Provider
 }
 
 // RedisNoncestore implements `Noncestore`
 type RedisNoncestore struct {
-	chainProvider *celo.Provider
+	chainProvider *celoutils.Provider
 	redis         *redispool.RedisPool
 }
 

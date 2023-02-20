@@ -5,30 +5,30 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
+
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
+	"github.com/grassrootseconomics/cic-custodial/internal/tasker/task"
 	"github.com/labstack/echo/v4"
 )
 
 // SignTxHandler route.
 // POST: /api/sign/transfer
 // JSON Body:
-// trackingId -> Unique string
 // from -> ETH address
 // to -> ETH address
 // voucherAddress -> ETH address
 // amount -> int (6 d.p. precision)
 // e.g. 1000000 = 1 VOUCHER
 // Returns the task id.
-func SignTransferHandler(
-	taskerClient *tasker.TaskerClient,
-) func(echo.Context) error {
+func SignTransferHandler(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		trackingId := uuid.NewString()
 
 		var transferRequest struct {
-			From           string `json:"from" validate:"required,eth_addr"`
-			To             string `json:"to" validate:"required,eth_addr"`
-			VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr"`
+			From           string `json:"from" validate:"required,eth_checksum"`
+			To             string `json:"to" validate:"required,eth_checksum"`
+			VoucherAddress string `json:"voucherAddress" validate:"required,eth_checksum"`
 			Amount         int64  `json:"amount" validate:"required,numeric"`
 		}
 
@@ -40,12 +40,19 @@ func SignTransferHandler(
 			return err
 		}
 
-		taskPayload, err := json.Marshal(transferRequest)
+		// TODO: Checksum addresses
+		taskPayload, err := json.Marshal(task.TransferPayload{
+			TrackingId:     trackingId,
+			From:           transferRequest.From,
+			To:             transferRequest.To,
+			VoucherAddress: transferRequest.VoucherAddress,
+			Amount:         transferRequest.Amount,
+		})
 		if err != nil {
 			return err
 		}
 
-		_, err = taskerClient.CreateTask(
+		_, err = cu.TaskerClient.CreateTask(
 			tasker.SignTransferTask,
 			tasker.HighPriority,
 			&tasker.Task{

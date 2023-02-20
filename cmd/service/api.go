@@ -5,14 +5,15 @@ import (
 	"net/http"
 
 	"github.com/VictoriaMetrics/metrics"
-	"github.com/go-playground/validator"
+	"github.com/go-playground/validator/v10"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
 )
 
 // Bootstrap API server.
-func initApiServer(custodialContainer *custodial) *echo.Echo {
+func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	lo.Debug("api: bootstrapping api server")
 	server := echo.New()
 	server.HideBanner = true
@@ -25,6 +26,15 @@ func initApiServer(custodialContainer *custodial) *echo.Echo {
 				Ok:      false,
 				Code:    api.DUPLICATE_ERROR,
 				Message: "Request with duplicate tracking id submitted.",
+			})
+			return
+		}
+
+		if err.(validator.ValidationErrors) != nil {
+			c.JSON(http.StatusForbidden, api.ErrResp{
+				Ok:      false,
+				Code:    api.VALIDATION_ERROR,
+				Message: err.(validator.ValidationErrors).Error(),
 			})
 			return
 		}
@@ -46,19 +56,16 @@ func initApiServer(custodialContainer *custodial) *echo.Echo {
 		})
 	}
 
+	customValidator := validator.New()
+	customValidator.RegisterValidation("eth_checksum", api.EthChecksumValidator)
+
 	server.Validator = &api.Validator{
-		ValidatorProvider: validator.New(),
+		ValidatorProvider: customValidator,
 	}
 
 	apiRoute := server.Group("/api")
-	apiRoute.POST("/account/create", api.CreateAccountHandler(
-		custodialContainer.keystore,
-		custodialContainer.taskerClient,
-	))
-
-	apiRoute.POST("/sign/transfer", api.SignTransferHandler(
-		custodialContainer.taskerClient,
-	))
+	apiRoute.POST("/account/create", api.CreateAccountHandler(custodialContainer))
+	apiRoute.POST("/sign/transfer", api.SignTransferHandler(custodialContainer))
 
 	return server
 }

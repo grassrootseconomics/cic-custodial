@@ -6,19 +6,15 @@ import (
 
 type Status string
 
-func (s *PostgresStore) CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) (uint, error) {
-	var (
-		id uint
-	)
-
-	if err := s.db.QueryRow(
+func (s *PostgresStore) CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) error {
+	if _, err := s.db.Exec(
 		ctx,
 		s.queries.CreateDispatchStatus,
 		dispatch.OtxId,
 		dispatch.Status,
-	).Scan(&id); err != nil {
-		return id, err
+	); err != nil {
+		return err
 	}
 
-	return id, nil
+	return nil
 }

@@ -9,11 +9,7 @@ import (
 	"sync"
 	"syscall"
 
-	"github.com/bsm/redislock"
-	celo "github.com/grassrootseconomics/cic-celo-sdk"
-	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
-	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
-	"github.com/grassrootseconomics/cic-custodial/internal/store"
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/knadh/koanf"
 	"github.com/labstack/echo/v4"
@@ -29,16 +25,6 @@ var (
 	ko *koanf.Koanf
 )
 
-type custodial struct {
-	celoProvider    *celo.Provider
-	keystore        keystore.Keystore
-	lockProvider    *redislock.Client
-	noncestore      nonce.Noncestore
-	pgStore         store.Store
-	systemContainer *tasker.SystemContainer
-	taskerClient    *tasker.TaskerClient
-}
-
 func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
 	flag.BoolVar(&debugFlag, "log", false, "Enable debug logging")
@@ -47,26 +33,26 @@ func init() {
 
 	lo = initLogger(debugFlag)
 	ko = initConfig(confFlag)
+
 }
 
 func main() {
 	var (
 		tasker    *tasker.TaskerServer
 		apiServer *echo.Echo
-		wg        sync.WaitGroup
 	)
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	celoProvider, err := initCeloProvider()
-	if err != nil {
-		lo.Fatal("main: critical error loading chain provider", "error", err)
-	}
-
 	queries, err := initQueries(queriesFlag)
 	if err != nil {
 		lo.Fatal("main: critical error loading SQL queries", "error", err)
+	}
+
+	celoProvider, err := initCeloProvider()
+	if err != nil {
+		lo.Fatal("main: critical error loading chain provider", "error", err)
 	}
 
 	postgresPool, err := initPostgresPool()
@@ -89,6 +75,11 @@ func main() {
 		lo.Fatal("main: critical error loading keystore")
 	}
 
+	jsEventEmitter, err := initJetStream()
+	if err != nil {
+		lo.Fatal("main: critical error loading jetstream event emitter")
+	}
+
 	pgStore := initPostgresStore(postgresPool, queries)
 	redisNoncestore := initRedisNoncestore(redisPool, celoProvider)
 	lockProvider := initLockProvider(redisPool.Client)
@@ -99,15 +90,18 @@ func main() {
 		lo.Fatal("main: critical error bootstrapping system container", "error", err)
 	}
 
-	custodial := &custodial{
-		celoProvider:    celoProvider,
-		keystore:        postgresKeystore,
-		lockProvider:    lockProvider,
-		noncestore:      redisNoncestore,
-		pgStore:         pgStore,
-		systemContainer: systemContainer,
-		taskerClient:    taskerClient,
+	custodial := &custodial.Custodial{
+		CeloProvider:    celoProvider,
+		EventEmitter:    jsEventEmitter,
+		Keystore:        postgresKeystore,
+		LockProvider:    lockProvider,
+		Noncestore:      redisNoncestore,
+		PgStore:         pgStore,
+		SystemContainer: systemContainer,
+		TaskerClient:    taskerClient,
 	}
+
+	wg := &sync.WaitGroup{}
 
 	apiServer = initApiServer(custodial)
 	wg.Add(1)

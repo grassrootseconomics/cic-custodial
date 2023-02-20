@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/grassrootseconomics/cic-custodial/pkg/logg"
 	"github.com/grassrootseconomics/cic-custodial/pkg/redis"
 	"github.com/hibiken/asynq"
 	"github.com/zerodha/logf"
@@ -17,12 +16,10 @@ const (
 )
 
 type TaskerServerOpts struct {
-	Concurrency     int
-	Logg            logf.Logger
-	LogLevel        asynq.LogLevel
-	RedisPool       *redis.RedisPool
-	SystemContainer *SystemContainer
-	TaskerClient    *TaskerClient
+	Concurrency int
+	Logg        logf.Logger
+	LogLevel    asynq.LogLevel
+	RedisPool   *redis.RedisPool
 }
 
 type TaskerServer struct {
@@ -36,7 +33,6 @@ func NewTaskerServer(o TaskerServerOpts) *TaskerServer {
 		asynq.Config{
 			Concurrency: o.Concurrency,
 			IsFailure:   expectedFailures,
-			Logger:      logg.NewAsynqLogg(o.Logg),
 			LogLevel:    o.LogLevel,
 			Queues: map[string]int{
 				string(HighPriority):    5,

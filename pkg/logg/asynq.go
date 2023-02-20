@@ -2,33 +2,32 @@ package logg
 
 import "github.com/zerodha/logf"
 
-type AsynqLogg struct {
-	logg *logf.Logger
+type AsynqLogger struct {
+	Lo *logf.Logger
 }
 
-// NewAsynqLogg creates a logf based logging adapter for asynq.
-func NewAsynqLogg(lo logf.Logger) AsynqLogg {
-	return AsynqLogg{
-		logg: &lo,
+func AsynqCompatibleLogger(lo logf.Logger) AsynqLogger {
+	return AsynqLogger{
+		Lo: &lo,
 	}
 }
 
-func (l AsynqLogg) Debug(args ...interface{}) {
-	l.logg.Debug("asynq", "debug", args[0])
+func (l AsynqLogger) Debug(args ...interface{}) {
+	l.Lo.Debug("asynq", "debug", args[0])
 }
 
-func (l AsynqLogg) Info(args ...interface{}) {
-	l.logg.Info("asynq", "info", args[0])
+func (l AsynqLogger) Info(args ...interface{}) {
+	l.Lo.Info("asynq", "info", args[0])
 }
 
-func (l AsynqLogg) Warn(args ...interface{}) {
-	l.logg.Warn("asynq", "warn", args[0])
+func (l AsynqLogger) Warn(args ...interface{}) {
+	l.Lo.Warn("asynq", "warn", args[0])
 }
 
-func (l AsynqLogg) Error(args ...interface{}) {
-	l.logg.Error("asynq", "error", args[0])
+func (l AsynqLogger) Error(args ...interface{}) {
+	l.Lo.Error("asynq", "error", args[0])
 }
 
-func (l AsynqLogg) Fatal(args ...interface{}) {
-	l.logg.Fatal("asynq", "fatal", args[0])
+func (l AsynqLogger) Fatal(args ...interface{}) {
+	l.Lo.Fatal("asynq", "fatal", args[0])
 }

@@ -5,7 +5,8 @@ import (
 	"time"
 
 	"github.com/bsm/redislock"
-	celo "github.com/grassrootseconomics/cic-celo-sdk"
+	"github.com/grassrootseconomics/celoutils"
+	"github.com/grassrootseconomics/cic-custodial/internal/events"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
 	"github.com/grassrootseconomics/cic-custodial/internal/queries"
@@ -20,9 +21,22 @@ import (
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
-	"github.com/nats-io/nats.go"
 	"github.com/zerodha/logf"
 )
+
+// Load logger.
+func initLogger(debug bool) logf.Logger {
+	loggOpts := logg.LoggOpts{
+		Color: true,
+	}
+
+	if debug {
+		loggOpts.Caller = true
+		loggOpts.Debug = true
+	}
+
+	return logg.NewLogg(loggOpts)
+}
 
 // Load config file.
 func initConfig(configFilePath string) *koanf.Koanf {
@@ -45,34 +59,19 @@ func initConfig(configFilePath string) *koanf.Koanf {
 	return ko
 }
 
-// Load logger.
-func initLogger(debug bool) logf.Logger {
-	loggOpts := logg.LoggOpts{
-		Color: true,
-	}
-
-	if debug {
-		loggOpts.Caller = true
-		loggOpts.Debug = true
-	}
-
-	return logg.NewLogg(loggOpts)
-}
-
 // Load Celo chain provider.
-func initCeloProvider() (*celo.Provider, error) {
-	providerOpts := celo.ProviderOpts{
+func initCeloProvider() (*celoutils.Provider, error) {
+	providerOpts := celoutils.ProviderOpts{
 		RpcEndpoint: ko.MustString("chain.rpc_endpoint"),
 	}
 
 	if ko.Bool("chain.testnet") {
-		// Devnet = 1337
-		providerOpts.ChainId = 1337
+		providerOpts.ChainId = celoutils.TestnetChainId
 	} else {
-		providerOpts.ChainId = celo.MainnetChainId
+		providerOpts.ChainId = celoutils.MainnetChainId
 	}
 
-	provider, err := celo.NewProvider(providerOpts)
+	provider, err := celoutils.NewProvider(providerOpts)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +125,7 @@ func initCommonRedisPool() (*redis.RedisPool, error) {
 
 // Load SQL statements into struct.
 func initQueries(queriesPath string) (*queries.Queries, error) {
-	parsedQueries, err := goyesql.ParseFile(queriesFlag)
+	parsedQueries, err := goyesql.ParseFile(queriesPath)
 	if err != nil {
 		return nil, err
 	}
@@ -150,7 +149,7 @@ func initPostgresKeystore(postgresPool *pgxpool.Pool, queries *queries.Queries) 
 }
 
 // Load redis backed noncestore.
-func initRedisNoncestore(redisPool *redis.RedisPool, celoProvider *celo.Provider) nonce.Noncestore {
+func initRedisNoncestore(redisPool *redis.RedisPool, celoProvider *celoutils.Provider) nonce.Noncestore {
 	return nonce.NewRedisNoncestore(nonce.Opts{
 		RedisPool:    redisPool,
 		CeloProvider: celoProvider,
@@ -179,32 +178,16 @@ func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) sto
 }
 
 // Init JetStream context for tasker events.
-func initJetStream() (nats.JetStreamContext, error) {
-	natsConn, err := nats.Connect(ko.MustString("jetstream.endpoint"))
+func initJetStream() (events.EventEmitter, error) {
+	jsEmitter, err := events.NewJetStreamEventEmitter(events.JetStreamOpts{
+		ServerUrl:       ko.MustString("jetstream.endpoint"),
+		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hours")) * time.Hour,
+		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hours")) * time.Hour,
+	})
+
 	if err != nil {
 		return nil, err
 	}
 
-	js, err := natsConn.JetStream()
-	if err != nil {
-		return nil, err
-	}
-
-	// Bootstrap stream if it does not exist
-	stream, _ := js.StreamInfo(ko.MustString("jetstream.stream_name"))
-	if stream == nil {
-		lo.Info("jetstream: bootstrapping stream")
-		_, err = js.AddStream(&nats.StreamConfig{
-			Name:       ko.MustString("jetstream.stream_name"),
-			MaxAge:     time.Duration(ko.MustInt("jetstream.persist_duration_hours")) * time.Hour,
-			Storage:    nats.FileStorage,
-			Subjects:   ko.MustStrings("jetstream.stream_subjects"),
-			Duplicates: time.Duration(ko.MustInt("jetstream.dedup_duration_hours")) * time.Hour,
-		})
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return js, nil
+	return jsEmitter, nil
 }

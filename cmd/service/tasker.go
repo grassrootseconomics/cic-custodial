@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker/task"
 	"github.com/grassrootseconomics/cic-custodial/pkg/redis"
@@ -8,75 +9,25 @@ import (
 )
 
 // Load tasker handlers, injecting any necessary handler dependencies from the system container.
-func initTasker(custodialContainer *custodial, redisPool *redis.RedisPool) *tasker.TaskerServer {
+func initTasker(custodialContainer *custodial.Custodial, redisPool *redis.RedisPool) *tasker.TaskerServer {
 	lo.Debug("Bootstrapping tasker")
-	js, err := initJetStream()
-	if err != nil {
-		lo.Fatal("filters: critical error loading jetstream", "error", err)
-	}
 
 	taskerServerOpts := tasker.TaskerServerOpts{
-		Concurrency:     ko.MustInt("asynq.worker_count"),
-		Logg:            lo,
-		LogLevel:        asynq.ErrorLevel,
-		RedisPool:       redisPool,
-		SystemContainer: custodialContainer.systemContainer,
-		TaskerClient:    custodialContainer.taskerClient,
-	}
-
-	if debugFlag {
-		taskerServerOpts.LogLevel = asynq.DebugLevel
+		Concurrency: ko.MustInt("asynq.worker_count"),
+		Logg:        lo,
+		LogLevel:    asynq.InfoLevel,
+		RedisPool:   redisPool,
 	}
 
 	taskerServer := tasker.NewTaskerServer(taskerServerOpts)
 
-	taskerServer.RegisterHandlers(tasker.PrepareAccountTask, task.PrepareAccount(
-		custodialContainer.noncestore,
-		custodialContainer.taskerClient,
-		js,
-	))
-	taskerServer.RegisterHandlers(tasker.RegisterAccountOnChain, task.RegisterAccountOnChainProcessor(
-		custodialContainer.celoProvider,
-		custodialContainer.lockProvider,
-		custodialContainer.noncestore,
-		custodialContainer.pgStore,
-		custodialContainer.systemContainer,
-		custodialContainer.taskerClient,
-		js,
-	))
-	taskerServer.RegisterHandlers(tasker.GiftGasTask, task.GiftGasProcessor(
-		custodialContainer.celoProvider,
-		custodialContainer.lockProvider,
-		custodialContainer.noncestore,
-		custodialContainer.pgStore,
-		custodialContainer.systemContainer,
-		custodialContainer.taskerClient,
-		js,
-	))
-	taskerServer.RegisterHandlers(tasker.GiftTokenTask, task.GiftTokenProcessor(
-		custodialContainer.celoProvider,
-		custodialContainer.lockProvider,
-		custodialContainer.noncestore,
-		custodialContainer.pgStore,
-		custodialContainer.systemContainer,
-		custodialContainer.taskerClient,
-		js,
-	))
-	taskerServer.RegisterHandlers(tasker.SignTransferTask, task.SignTransfer(
-		custodialContainer.celoProvider,
-		custodialContainer.keystore,
-		custodialContainer.lockProvider,
-		custodialContainer.noncestore,
-		custodialContainer.pgStore,
-		custodialContainer.systemContainer,
-		custodialContainer.taskerClient,
-		js,
-	))
-	taskerServer.RegisterHandlers(tasker.TxDispatchTask, task.TxDispatch(
-		custodialContainer.celoProvider,
-		custodialContainer.pgStore,
-		js,
-	))
+	taskerServer.RegisterHandlers(tasker.AccountPrepareTask, task.AccountPrepare(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.AccountRegisterTask, task.AccountRegisterOnChainProcessor(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.AccountGiftGasTask, task.AccountGiftGasProcessor(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.AccountGiftVoucherTask, task.GiftVoucherProcessor(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.AccountRefillGasTask, task.AccountRefillGasProcessor(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.SignTransferTask, task.SignTransfer(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.DispatchTxTask, task.DispatchTx(custodialContainer))
 
 	return taskerServer
 }

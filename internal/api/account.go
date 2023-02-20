@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/google/uuid"
-	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker/task"
 	"github.com/grassrootseconomics/cic-custodial/pkg/keypair"
@@ -15,10 +15,7 @@ import (
 // CreateAccountHandler route.
 // POST: /api/account/create
 // Returns the public key.
-func CreateAccountHandler(
-	keystore keystore.Keystore,
-	taskerClient *tasker.TaskerClient,
-) func(echo.Context) error {
+func CreateAccountHandler(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		trackingId := uuid.NewString()
 
@@ -27,7 +24,7 @@ func CreateAccountHandler(
 			return err
 		}
 
-		id, err := keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair)
+		id, err := cu.Keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair)
 		if err != nil {
 			return err
 		}
@@ -40,8 +37,8 @@ func CreateAccountHandler(
 			return err
 		}
 
-		_, err = taskerClient.CreateTask(
-			tasker.PrepareAccountTask,
+		_, err = cu.TaskerClient.CreateTask(
+			tasker.AccountPrepareTask,
 			tasker.DefaultPriority,
 			&tasker.Task{
 				Id:      trackingId,

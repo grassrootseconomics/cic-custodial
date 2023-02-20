@@ -8,6 +8,10 @@ import (
 	"github.com/hibiken/asynq"
 )
 
+const (
+	taskTimeout = 60
+)
+
 type TaskerClientOpts struct {
 	RedisPool     *redis.RedisPool
 	TaskRetention time.Duration
@@ -35,6 +39,7 @@ func (c *TaskerClient) CreateTask(taskName TaskName, queueName QueueName, task *
 		asynq.Queue(string(queueName)),
 		asynq.TaskID(task.Id),
 		asynq.Retention(c.taskRetention),
+		asynq.Timeout(taskTimeout*time.Second),
 	)
 
 	taskInfo, err := c.Client.Enqueue(qTask)
