@@ -8,7 +8,7 @@ builds:
       - linux
     goarch:
       - amd64
-    main: ./cmd
+    main: ./cmd/service
     ldflags:
       - -s -w
 
