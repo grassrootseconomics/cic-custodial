@@ -13,9 +13,15 @@ jobs:
     environment: build
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
+
+      - name: Workaround Git Security Warning
+        run: |
+          # Workaround a bug in github actions:
+          # https://github.com/actions/runner-images/issues/6775.
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"          
 
       - name: Set up Go
         uses: actions/setup-go@v2
