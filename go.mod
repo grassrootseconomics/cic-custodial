@@ -6,6 +6,7 @@ require (
 	github.com/VictoriaMetrics/metrics v1.23.1
 	github.com/bsm/redislock v0.7.2
 	github.com/celo-org/celo-blockchain v1.7.2
+	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-playground/validator/v10 v10.11.2
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
@@ -70,7 +71,6 @@ require (
 	github.com/prometheus/tsdb v0.10.0 // indirect
 	github.com/rivo/uniseg v0.4.3 // indirect
 	github.com/robfig/cron/v3 v3.0.1 // indirect
-	github.com/rogpeppe/go-internal v1.9.0 // indirect
 	github.com/shirou/gopsutil v3.21.11+incompatible // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20210819022825-2ae1ddf74ef7 // indirect

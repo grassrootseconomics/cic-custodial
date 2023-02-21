@@ -30,7 +30,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 			return
 		}
 
-		if err.(validator.ValidationErrors) != nil {
+		if _, ok := err.(validator.ValidationErrors); ok {
 			c.JSON(http.StatusForbidden, api.ErrResp{
 				Ok:      false,
 				Code:    api.VALIDATION_ERROR,
@@ -66,6 +66,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	apiRoute := server.Group("/api")
 	apiRoute.POST("/account/create", api.CreateAccountHandler(custodialContainer))
 	apiRoute.POST("/sign/transfer", api.SignTransferHandler(custodialContainer))
+	apiRoute.GET("/track/:trackingId", api.TxStatus(custodialContainer.PgStore))
 
 	return server
 }

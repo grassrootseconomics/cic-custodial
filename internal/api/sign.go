@@ -29,7 +29,7 @@ func SignTransferHandler(cu *custodial.Custodial) func(echo.Context) error {
 			From           string `json:"from" validate:"required,eth_checksum"`
 			To             string `json:"to" validate:"required,eth_checksum"`
 			VoucherAddress string `json:"voucherAddress" validate:"required,eth_checksum"`
-			Amount         int64  `json:"amount" validate:"required,numeric"`
+			Amount         uint64 `json:"amount" validate:"required,numeric"`
 		}
 
 		if err := c.Bind(&transferRequest); err != nil {

@@ -10,6 +10,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/events"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
+	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
 )
@@ -75,15 +76,17 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 			return err
 		}
 
-		id, err := cu.PgStore.CreateOTX(ctx, store.OTX{
-			TrackingId: payload.TrackingId,
-			Type:       "GIFT_VOUCHER",
-			RawTx:      hexutil.Encode(rawTx),
-			TxHash:     builtTx.Hash().Hex(),
-			From:       cu.SystemContainer.PublicKey,
-			Data:       hexutil.Encode(builtTx.Data()),
-			GasPrice:   builtTx.GasPrice().Uint64(),
-			Nonce:      builtTx.Nonce(),
+		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
+			TrackingId:    payload.TrackingId,
+			Type:          enum.ACCOUNT_REGISTER,
+			RawTx:         hexutil.Encode(rawTx),
+			TxHash:        builtTx.Hash().Hex(),
+			From:          cu.SystemContainer.PublicKey,
+			Data:          hexutil.Encode(builtTx.Data()),
+			GasPrice:      builtTx.GasPrice().Uint64(),
+			GasLimit:      builtTx.Gas(),
+			TransferValue: cu.SystemContainer.GiftableTokenValue.Uint64(),
+			Nonce:         builtTx.Nonce(),
 		})
 		if err != nil {
 

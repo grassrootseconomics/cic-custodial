@@ -28,7 +28,7 @@ var (
 func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
 	flag.BoolVar(&debugFlag, "log", false, "Enable debug logging")
-	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
+	flag.StringVar(&queriesFlag, "queries", "queries/queries.sql", "Queries file location")
 	flag.Parse()
 
 	lo = initLogger(debugFlag)

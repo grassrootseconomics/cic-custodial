@@ -12,6 +12,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/events"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
+	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
 )
@@ -22,7 +23,7 @@ type (
 		From           string `json:"from" `
 		To             string `json:"to"`
 		VoucherAddress string `json:"voucherAddress"`
-		Amount         int64  `json:"amount"`
+		Amount         uint64 `json:"amount"`
 	}
 
 	transferEventPayload struct {
@@ -71,7 +72,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			}
 		}()
 
-		input, err := cu.SystemContainer.Abis["transfer"].EncodeArgs(w3.A(payload.To), big.NewInt(payload.Amount))
+		input, err := cu.SystemContainer.Abis["transfer"].EncodeArgs(w3.A(payload.To), new(big.Int).SetUint64(payload.Amount))
 		if err != nil {
 			return err
 		}
@@ -97,15 +98,17 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			return err
 		}
 
-		id, err := cu.PgStore.CreateOTX(ctx, store.OTX{
-			TrackingId: payload.TrackingId,
-			Type:       "TRANSFER",
-			RawTx:      hexutil.Encode(rawTx),
-			TxHash:     builtTx.Hash().Hex(),
-			From:       payload.From,
-			Data:       hexutil.Encode(builtTx.Data()),
-			GasPrice:   builtTx.GasPrice().Uint64(),
-			Nonce:      builtTx.Nonce(),
+		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
+			TrackingId:    payload.TrackingId,
+			Type:          enum.TRANSFER_VOUCHER,
+			RawTx:         hexutil.Encode(rawTx),
+			TxHash:        builtTx.Hash().Hex(),
+			From:          payload.From,
+			Data:          hexutil.Encode(builtTx.Data()),
+			GasPrice:      builtTx.GasPrice().Uint64(),
+			GasLimit:      builtTx.Gas(),
+			TransferValue: payload.Amount,
+			Nonce:         builtTx.Nonce(),
 		})
 		if err != nil {
 			return err

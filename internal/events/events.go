@@ -5,10 +5,8 @@ type EventEmitter interface {
 	Publish(subject string, dedupId string, eventPayload interface{}) error
 }
 
-type (
-	EventPayload struct {
-		OtxId      uint   `json:"otxId"`
-		TrackingId string `json:"trackingId"`
-		TxHash     string `json:"txHash"`
-	}
-)
+type EventPayload struct {
+	OtxId      uint   `json:"otxId"`
+	TrackingId string `json:"trackingId"`
+	TxHash     string `json:"txHash"`
+}

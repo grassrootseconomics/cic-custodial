@@ -11,6 +11,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/events"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
+	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
 )
@@ -76,14 +77,15 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 			return err
 		}
 
-		id, err := cu.PgStore.CreateOTX(ctx, store.OTX{
+		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
 			TrackingId: payload.TrackingId,
-			Type:       "ACCOUNT_REGISTER",
+			Type:       enum.ACCOUNT_REGISTER,
 			RawTx:      hexutil.Encode(rawTx),
 			TxHash:     builtTx.Hash().Hex(),
 			From:       cu.SystemContainer.PublicKey,
 			Data:       hexutil.Encode(builtTx.Data()),
 			GasPrice:   builtTx.GasPrice().Uint64(),
+			GasLimit:   builtTx.Gas(),
 			Nonce:      builtTx.Nonce(),
 		})
 		if err != nil {

@@ -10,10 +10,11 @@ type Queries struct {
 	// Keystore
 	WriteKeyPair string `query:"write-key-pair"`
 	LoadKeyPair  string `query:"load-key-pair"`
-	// OTX
-	CreateOTX string `query:"create-otx"`
-	// Dispatch
-	CreateDispatchStatus string `query:"create-dispatch-status"`
+	// Store
+	CreateOTX               string `query:"create-otx"`
+	CreateDispatchStatus    string `query:"create-dispatch-status"`
+	UpdateChainStatus       string `query:"update-chain-status"`
+	GetTxStatusByTrackingId string `query:"get-tx-status-by-tracking-id"`
 }
 
 func LoadQueries(q goyesql.Queries) (*Queries, error) {

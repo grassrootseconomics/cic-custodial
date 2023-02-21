@@ -11,7 +11,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/events"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
-	"github.com/grassrootseconomics/cic-custodial/pkg/status"
+	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/hibiken/asynq"
 )
@@ -43,15 +43,15 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 			ctx,
 			eth.SendTx(payload.Tx).Returns(&dispathchTx),
 		); err != nil {
-			dispatchStatus.Status = status.Unknown
-
 			switch err.Error() {
 			case celoutils.ErrGasPriceLow:
-				dispatchStatus.Status = status.FailGasPrice
+				dispatchStatus.Status = enum.FAIL_LOW_GAS_PRICE
 			case celoutils.ErrInsufficientGas:
-				dispatchStatus.Status = status.FailInsufficientGas
+				dispatchStatus.Status = enum.FAIL_NO_GAS
 			case celoutils.ErrNonceLow:
-				dispatchStatus.Status = status.FailNonce
+				dispatchStatus.Status = enum.FAIL_LOW_NONCE
+			default:
+				dispatchStatus.Status = enum.FAIL_UNKNOWN_RPC_ERROR
 			}
 
 			if err := cu.PgStore.CreateDispatchStatus(ctx, dispatchStatus); err != nil {
@@ -65,7 +65,7 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 		}
 
-		dispatchStatus.Status = status.Successful
+		dispatchStatus.Status = enum.IN_NETWORK
 
 		if err := cu.PgStore.CreateDispatchStatus(ctx, dispatchStatus); err != nil {
 			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
