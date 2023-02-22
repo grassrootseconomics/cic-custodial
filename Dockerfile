@@ -16,6 +16,7 @@ WORKDIR /service
 
 COPY --from=build /build/cic-custodial .
 COPY config.toml .
+COPY queries .
 
 CMD ["./cic-custodial"]
 
