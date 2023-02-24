@@ -1,6 +1,6 @@
 module github.com/grassrootseconomics/cic-custodial
 
-go 1.19
+go 1.20
 
 require (
 	github.com/VictoriaMetrics/metrics v1.23.1
