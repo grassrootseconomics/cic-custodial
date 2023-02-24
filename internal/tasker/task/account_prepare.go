@@ -29,6 +29,7 @@ func AccountPrepare(cu *custodial.Custodial) func(context.Context, *asynq.Task) 
 		}
 
 		_, err := cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.AccountRegisterTask,
 			tasker.DefaultPriority,
 			&tasker.Task{
@@ -40,6 +41,7 @@ func AccountPrepare(cu *custodial.Custodial) func(context.Context, *asynq.Task) 
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.AccountGiftGasTask,
 			tasker.DefaultPriority,
 			&tasker.Task{
@@ -51,6 +53,7 @@ func AccountPrepare(cu *custodial.Custodial) func(context.Context, *asynq.Task) 
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.AccountGiftVoucherTask,
 			tasker.DefaultPriority,
 			&tasker.Task{

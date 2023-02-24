@@ -103,6 +103,7 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.DispatchTxTask,
 			tasker.HighPriority,
 			&tasker.Task{

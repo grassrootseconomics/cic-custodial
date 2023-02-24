@@ -11,7 +11,9 @@ type Validator struct {
 
 func (v *Validator) Validate(i interface{}) error {
 	if err := v.ValidatorProvider.Struct(i); err != nil {
-		return err
+		if _, ok := err.(validator.ValidationErrors); ok {
+			return NewBadRequestError(err.(validator.ValidationErrors).Error())
+		}
 	}
 	return nil
 }

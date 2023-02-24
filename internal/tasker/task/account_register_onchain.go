@@ -101,6 +101,7 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.DispatchTxTask,
 			tasker.HighPriority,
 			&tasker.Task{

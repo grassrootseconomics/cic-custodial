@@ -93,6 +93,7 @@ func AccountGiftGasProcessor(cu *custodial.Custodial) func(context.Context, *asy
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.DispatchTxTask,
 			tasker.HighPriority,
 			&tasker.Task{

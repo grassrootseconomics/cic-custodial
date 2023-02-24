@@ -1,6 +1,7 @@
 package tasker
 
 import (
+	"context"
 	"time"
 
 	"github.com/google/uuid"
@@ -28,7 +29,7 @@ func NewTaskerClient(o TaskerClientOpts) *TaskerClient {
 	}
 }
 
-func (c *TaskerClient) CreateTask(taskName TaskName, queueName QueueName, task *Task) (*asynq.TaskInfo, error) {
+func (c *TaskerClient) CreateTask(ctx context.Context, taskName TaskName, queueName QueueName, task *Task) (*asynq.TaskInfo, error) {
 	if task.Id == "" {
 		task.Id = uuid.NewString()
 	}
@@ -42,7 +43,7 @@ func (c *TaskerClient) CreateTask(taskName TaskName, queueName QueueName, task *
 		asynq.Timeout(taskTimeout*time.Second),
 	)
 
-	taskInfo, err := c.Client.Enqueue(qTask)
+	taskInfo, err := c.Client.EnqueueContext(ctx, qTask)
 	if err != nil {
 		return nil, err
 	}

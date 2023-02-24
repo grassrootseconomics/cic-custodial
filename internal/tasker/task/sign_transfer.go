@@ -123,6 +123,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.DispatchTxTask,
 			tasker.HighPriority,
 			&tasker.Task{
@@ -141,6 +142,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 
 		_, err = cu.TaskerClient.CreateTask(
+			ctx,
 			tasker.AccountRefillGasTask,
 			tasker.DefaultPriority,
 			&tasker.Task{

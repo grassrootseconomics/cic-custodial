@@ -1,53 +1,45 @@
 package main
 
 import (
-	"errors"
 	"net/http"
+	"time"
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-playground/validator/v10"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/hibiken/asynq"
 	"github.com/labstack/echo/v4"
+	"github.com/labstack/echo/v4/middleware"
+)
+
+const (
+	contextTimeout = 5
 )
 
 // Bootstrap API server.
 func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
-	lo.Debug("api: bootstrapping api server")
+	customValidator := validator.New()
+	customValidator.RegisterValidation("eth_checksum", api.EthChecksumValidator)
+
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
 
-	server.HTTPErrorHandler = func(err error, c echo.Context) {
-		// Handle asynq duplication errors across all api handlers.
-		if errors.Is(err, asynq.ErrTaskIDConflict) {
-			c.JSON(http.StatusForbidden, api.ErrResp{
-				Ok:      false,
-				Code:    api.DUPLICATE_ERROR,
-				Message: "Request with duplicate tracking id submitted.",
-			})
-			return
-		}
-
-		if _, ok := err.(validator.ValidationErrors); ok {
-			c.JSON(http.StatusForbidden, api.ErrResp{
-				Ok:      false,
-				Code:    api.VALIDATION_ERROR,
-				Message: err.(validator.ValidationErrors).Error(),
-			})
-			return
-		}
-
-		// Log internal server error for further investigation.
-		lo.Error("api:", "path", c.Path(), "err", err)
-
-		c.JSON(http.StatusInternalServerError, api.ErrResp{
-			Ok:      false,
-			Code:    api.INTERNAL_ERROR,
-			Message: "Internal server error.",
-		})
+	server.Validator = &api.Validator{
+		ValidatorProvider: customValidator,
 	}
+
+	server.HTTPErrorHandler = customHTTPErrorHandler
+
+	server.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			c.Set("cu", custodialContainer)
+			return next(c)
+		}
+	})
+	server.Use(middleware.Recover())
+	server.Use(middleware.BodyLimit("1M"))
+	server.Use(middleware.ContextTimeout(time.Duration(contextTimeout * time.Second)))
 
 	if ko.Bool("service.metrics") {
 		server.GET("/metrics", func(c echo.Context) error {
@@ -56,17 +48,39 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 		})
 	}
 
-	customValidator := validator.New()
-	customValidator.RegisterValidation("eth_checksum", api.EthChecksumValidator)
-
-	server.Validator = &api.Validator{
-		ValidatorProvider: customValidator,
-	}
-
 	apiRoute := server.Group("/api")
-	apiRoute.POST("/account/create", api.CreateAccountHandler(custodialContainer))
-	apiRoute.POST("/sign/transfer", api.SignTransferHandler(custodialContainer))
-	apiRoute.GET("/track/:trackingId", api.TxStatus(custodialContainer.PgStore))
+	apiRoute.POST("/account/create", api.HandleAccountCreate)
+	apiRoute.POST("/sign/transfer", api.HandleSignTransfer)
+	apiRoute.GET("/track/:trackingId", api.HandleTrackTx)
 
 	return server
+}
+
+func customHTTPErrorHandler(err error, c echo.Context) {
+	if c.Response().Committed {
+		return
+	}
+
+	he, ok := err.(*echo.HTTPError)
+	if ok {
+		var errorMsg string
+
+		if m, ok := he.Message.(error); ok {
+			errorMsg = m.Error()
+		} else if m, ok := he.Message.(string); ok {
+			errorMsg = m
+		}
+
+		c.JSON(he.Code, api.ErrResp{
+			Ok:      false,
+			Message: errorMsg,
+		})
+	} else {
+		lo.Error("api: echo error", "path", c.Path(), "err", err)
+
+		c.JSON(http.StatusInternalServerError, api.ErrResp{
+			Ok:      false,
+			Message: "Internal server error.",
+		})
+	}
 }
