@@ -17,5 +17,5 @@ archives:
     files:
       - LICENSE
       - config.toml
-      - queries
+      - queries.sql
       - migrations

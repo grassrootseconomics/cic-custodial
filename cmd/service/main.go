@@ -11,15 +11,16 @@ import (
 
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
-	"github.com/knadh/koanf"
+	"github.com/knadh/koanf/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/zerodha/logf"
 )
 
 var (
-	confFlag    string
-	debugFlag   bool
-	queriesFlag string
+	confFlag             string
+	debugFlag            bool
+	migrationsFolderFlag string
+	queriesFlag          string
 
 	lo logf.Logger
 	ko *koanf.Koanf
@@ -28,12 +29,12 @@ var (
 func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
 	flag.BoolVar(&debugFlag, "log", false, "Enable debug logging")
-	flag.StringVar(&queriesFlag, "queries", "queries/queries.sql", "Queries file location")
+	flag.StringVar(&migrationsFolderFlag, "migrations", "migrations/", "Migrations folder location")
+	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
 	flag.Parse()
 
 	lo = initLogger(debugFlag)
 	ko = initConfig(confFlag)
-
 }
 
 func main() {

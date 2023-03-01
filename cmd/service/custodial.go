@@ -35,8 +35,8 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) (*tas
 	// Some custodial system defaults loaded from the config file.
 	systemContainer := &tasker.SystemContainer{
 		Abis:                  initAbis(),
-		AccountIndexContract:  w3.A(ko.MustString("system.account_index")),
-		GasFaucetContract:     w3.A(ko.MustString("system.gas_faucet")),
+		AccountIndexContract:  w3.A(ko.MustString("system.account_index_address")),
+		GasFaucetContract:     w3.A(ko.MustString("system.gas_faucet_address")),
 		GasRefillThreshold:    big.NewInt(ko.MustInt64("system.gas_refill_threshold")),
 		GasRefillValue:        big.NewInt(ko.MustInt64("system.gas_refill_value")),
 		GiftableGasValue:      big.NewInt(ko.MustInt64("system.giftable_gas_value")),

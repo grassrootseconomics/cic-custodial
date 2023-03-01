@@ -17,20 +17,19 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/pkg/redis"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/knadh/goyesql/v2"
-	"github.com/knadh/koanf"
 	"github.com/knadh/koanf/parsers/toml"
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
+	"github.com/knadh/koanf/v2"
 	"github.com/zerodha/logf"
 )
 
 // Load logger.
 func initLogger(debug bool) logf.Logger {
-	loggOpts := logg.LoggOpts{
-		Color: true,
-	}
+	loggOpts := logg.LoggOpts{}
 
 	if debug {
+		loggOpts.Color = true
 		loggOpts.Caller = true
 		loggOpts.Debug = true
 	}
@@ -49,9 +48,9 @@ func initConfig(configFilePath string) *koanf.Koanf {
 		lo.Fatal("Could not load config file", "error", err)
 	}
 
-	if err := ko.Load(env.Provider("", ".", func(s string) string {
-		return strings.ReplaceAll(strings.ToLower(
-			strings.TrimPrefix(s, "")), "_", ".")
+	if err := ko.Load(env.Provider("CUSTODIAL_", ".", func(s string) string {
+		return strings.Replace(strings.ToLower(
+			strings.TrimPrefix(s, "")), "_", ".", -1)
 	}), nil); err != nil {
 		lo.Fatal("Could not override config from env vars", "error", err)
 	}
@@ -82,7 +81,8 @@ func initCeloProvider() (*celoutils.Provider, error) {
 // Load postgres pool.
 func initPostgresPool() (*pgxpool.Pool, error) {
 	poolOpts := postgres.PostgresPoolOpts{
-		DSN: ko.MustString("postgres.dsn"),
+		DSN:                  ko.MustString("postgres.dsn"),
+		MigrationsFolderPath: migrationsFolderFlag,
 	}
 
 	pool, err := postgres.NewPostgresPool(poolOpts)
@@ -181,8 +181,8 @@ func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) sto
 func initJetStream() (events.EventEmitter, error) {
 	jsEmitter, err := events.NewJetStreamEventEmitter(events.JetStreamOpts{
 		ServerUrl:       ko.MustString("jetstream.endpoint"),
-		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hours")) * time.Hour,
-		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hours")) * time.Hour,
+		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hrs")) * time.Hour,
+		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hrs")) * time.Hour,
 	})
 
 	if err != nil {
