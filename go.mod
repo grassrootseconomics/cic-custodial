@@ -19,7 +19,7 @@ require (
 	github.com/knadh/koanf v1.5.0
 	github.com/knadh/koanf/v2 v2.0.0
 	github.com/labstack/echo/v4 v4.10.2
-	github.com/nats-io/nats.go v1.23.0
+	github.com/nats-io/nats.go v1.24.0
 	github.com/zerodha/logf v0.5.5
 )
 
