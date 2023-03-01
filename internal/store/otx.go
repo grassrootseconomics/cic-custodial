@@ -57,3 +57,7 @@ func (s *PostgresStore) GetTxStatusByTrackingId(ctx context.Context, trackingId 
 
 	return txs, nil
 }
+
+func (s *PostgresStore) UpdateOtxStatus(ctx context.Context, status string) error {
+	return nil
+}

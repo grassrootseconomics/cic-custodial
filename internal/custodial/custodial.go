@@ -12,7 +12,7 @@ import (
 
 type Custodial struct {
 	CeloProvider    *celoutils.Provider
-	EventEmitter    events.EventEmitter
+	EventEmitter    *events.JetStream
 	Keystore        keystore.Keystore
 	LockProvider    *redislock.Client
 	Noncestore      nonce.Noncestore

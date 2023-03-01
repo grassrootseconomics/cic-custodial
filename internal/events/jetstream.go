@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/nats-io/nats.go"
+	"github.com/zerodha/logf"
 )
 
 const (
@@ -22,17 +23,19 @@ const (
 )
 
 type JetStreamOpts struct {
+	Logg logf.Logger
 	ServerUrl       string
 	PersistDuration time.Duration
 	DedupDuration   time.Duration
 }
 
 type JetStream struct {
-	jsCtx nats.JetStreamContext
-	nc    *nats.Conn
+	logg logf.Logger
+	jsCtx    nats.JetStreamContext
+	natsConn *nats.Conn
 }
 
-func NewJetStreamEventEmitter(o JetStreamOpts) (EventEmitter, error) {
+func NewJetStreamEventEmitter(o JetStreamOpts) (*JetStream, error) {
 	natsConn, err := nats.Connect(o.ServerUrl)
 	if err != nil {
 		return nil, err
@@ -59,15 +62,15 @@ func NewJetStreamEventEmitter(o JetStreamOpts) (EventEmitter, error) {
 	}
 
 	return &JetStream{
-		jsCtx: js,
-		nc:    natsConn,
+		jsCtx:    js,
+		natsConn: natsConn,
 	}, nil
 }
 
 // Close gracefully shutdowns the JetStream connection.
 func (js *JetStream) Close() {
-	if js.nc != nil {
-		js.nc.Close()
+	if js.natsConn != nil {
+		js.natsConn.Close()
 	}
 }
 

@@ -21,8 +21,9 @@ import (
 func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
-			payload AccountPayload
 			balance big.Int
+			err     error
+			payload AccountPayload
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {

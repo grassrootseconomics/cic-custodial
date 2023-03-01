@@ -37,6 +37,7 @@ type (
 func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
+			err     error
 			payload TransferPayload
 		)
 
