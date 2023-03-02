@@ -19,18 +19,18 @@ type PostgresPoolOpts struct {
 }
 
 // NewPostgresPool creates a reusbale connection pool across the cic-custodial component.
-func NewPostgresPool(o PostgresPoolOpts) (*pgxpool.Pool, error) {
+func NewPostgresPool(ctx context.Context, o PostgresPoolOpts) (*pgxpool.Pool, error) {
 	parsedConfig, err := pgxpool.ParseConfig(o.DSN)
 	if err != nil {
 		return nil, err
 	}
 
-	dbPool, err := pgxpool.NewWithConfig(context.Background(), parsedConfig)
+	dbPool, err := pgxpool.NewWithConfig(ctx, parsedConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	conn, err := dbPool.Acquire(ctx)

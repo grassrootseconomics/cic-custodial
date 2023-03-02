@@ -18,7 +18,7 @@ type RedisPool struct {
 
 // NewRedisPool creates a reusable connection across the cic-custodial componenent.
 // Note: Each db namespace requires its own connection pool.
-func NewRedisPool(o RedisPoolOpts) (*RedisPool, error) {
+func NewRedisPool(ctx context.Context, o RedisPoolOpts) (*RedisPool, error) {
 	redisOpts, err := redis.ParseURL(o.DSN)
 	if err != nil {
 		return nil, err
@@ -28,7 +28,7 @@ func NewRedisPool(o RedisPoolOpts) (*RedisPool, error) {
 
 	redisClient := redis.NewClient(redisOpts)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	_, err = redisClient.Ping(ctx).Result()

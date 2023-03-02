@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"strings"
 	"time"
 
@@ -25,10 +26,10 @@ import (
 )
 
 // Load logger.
-func initLogger(debug bool) logf.Logger {
+func initLogger() logf.Logger {
 	loggOpts := logg.LoggOpts{}
 
-	if debug {
+	if debugFlag {
 		loggOpts.Color = true
 		loggOpts.Caller = true
 		loggOpts.Debug = true
@@ -38,12 +39,12 @@ func initLogger(debug bool) logf.Logger {
 }
 
 // Load config file.
-func initConfig(configFilePath string) *koanf.Koanf {
+func initConfig() *koanf.Koanf {
 	var (
 		ko = koanf.New(".")
 	)
 
-	confFile := file.Provider(configFilePath)
+	confFile := file.Provider(confFlag)
 	if err := ko.Load(confFile, toml.Parser()); err != nil {
 		lo.Fatal("Could not load config file", "error", err)
 	}
@@ -55,13 +56,15 @@ func initConfig(configFilePath string) *koanf.Koanf {
 		lo.Fatal("Could not override config from env vars", "error", err)
 	}
 
-	ko.Print()
+	if debugFlag {
+		ko.Print()
+	}
 
 	return ko
 }
 
 // Load Celo chain provider.
-func initCeloProvider() (*celoutils.Provider, error) {
+func initCeloProvider() *celoutils.Provider {
 	providerOpts := celoutils.ProviderOpts{
 		RpcEndpoint: ko.MustString("chain.rpc_endpoint"),
 	}
@@ -74,80 +77,80 @@ func initCeloProvider() (*celoutils.Provider, error) {
 
 	provider, err := celoutils.NewProvider(providerOpts)
 	if err != nil {
-		return nil, err
+		lo.Fatal("init: critical error loading chain provider", "error", err)
 	}
 
-	return provider, nil
+	return provider
 }
 
 // Load postgres pool.
-func initPostgresPool() (*pgxpool.Pool, error) {
+func initPostgresPool() *pgxpool.Pool {
 	poolOpts := postgres.PostgresPoolOpts{
 		DSN:                  ko.MustString("postgres.dsn"),
 		MigrationsFolderPath: migrationsFolderFlag,
 	}
 
-	pool, err := postgres.NewPostgresPool(poolOpts)
+	pool, err := postgres.NewPostgresPool(context.Background(), poolOpts)
 	if err != nil {
-		return nil, err
+		lo.Fatal("init: critical error connecting to postgres", "error", err)
 	}
 
-	return pool, nil
+	return pool
 }
 
 // Load separate redis connection for the tasker on a reserved db namespace.
-func initAsynqRedisPool() (*redis.RedisPool, error) {
+func initAsynqRedisPool() *redis.RedisPool {
 	poolOpts := redis.RedisPoolOpts{
 		DSN:          ko.MustString("asynq.dsn"),
 		MinIdleConns: ko.MustInt("redis.min_idle_conn"),
 	}
 
-	pool, err := redis.NewRedisPool(poolOpts)
+	pool, err := redis.NewRedisPool(context.Background(), poolOpts)
 	if err != nil {
-		return nil, err
+		lo.Fatal("init: critical error connecting to asynq redis db", "error", err)
 	}
 
-	return pool, nil
+	return pool
 }
 
 // Common redis connection on a different db namespace from the takser.
-func initCommonRedisPool() (*redis.RedisPool, error) {
+func initCommonRedisPool() *redis.RedisPool {
 	poolOpts := redis.RedisPoolOpts{
 		DSN:          ko.MustString("redis.dsn"),
 		MinIdleConns: ko.MustInt("redis.min_idle_conn"),
 	}
 
-	pool, err := redis.NewRedisPool(poolOpts)
+	pool, err := redis.NewRedisPool(context.Background(), poolOpts)
 	if err != nil {
-		return nil, err
+		lo.Fatal("init: critical error connecting to common redis db", "error", err)
 	}
 
-	return pool, nil
+	return pool
 }
 
 // Load SQL statements into struct.
-func initQueries(queriesPath string) (*queries.Queries, error) {
-	parsedQueries, err := goyesql.ParseFile(queriesPath)
+func initQueries() *queries.Queries {
+	parsedQueries, err := goyesql.ParseFile(queriesFlag)
 	if err != nil {
-		return nil, err
+		lo.Fatal("init: critical error loading SQL queries", "error", err)
 	}
 
 	loadedQueries, err := queries.LoadQueries(parsedQueries)
 	if err != nil {
-		return nil, err
+		lo.Fatal("init: critical error loading SQL queries", "error", err)
 	}
 
-	return loadedQueries, nil
+	return loadedQueries
 }
 
 // Load postgres based keystore.
-func initPostgresKeystore(postgresPool *pgxpool.Pool, queries *queries.Queries) (keystore.Keystore, error) {
+func initPostgresKeystore(postgresPool *pgxpool.Pool, queries *queries.Queries) keystore.Keystore {
 	keystore := keystore.NewPostgresKeytore(keystore.Opts{
 		PostgresPool: postgresPool,
 		Queries:      queries,
 	})
 
-	return keystore, nil
+	return keystore
 }
 
 // Load redis backed noncestore.
@@ -180,17 +183,19 @@ func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) sto
 }
 
 // Init JetStream context for tasker events.
-func initJetStream() (*events.JetStream, error) {
+func initJetStream(pgStore store.Store) *events.JetStream {
 	jsEmitter, err := events.NewJetStreamEventEmitter(events.JetStreamOpts{
 		Logg:            lo,
+		PgStore:         pgStore,
 		ServerUrl:       ko.MustString("jetstream.endpoint"),
 		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hrs")) * time.Hour,
 		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hrs")) * time.Hour,
 	})
 
 	if err != nil {
-		return nil, err
+		lo.Fatal("main: critical error loading jetstream event emitter")
+
 	}
 
-	return jsEmitter, nil
+	return jsEmitter
 }

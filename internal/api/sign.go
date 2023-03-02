@@ -33,7 +33,7 @@ func HandleSignTransfer(c echo.Context) error {
 	)
 
 	if err := c.Bind(&req); err != nil {
-		return NewBadRequestError(err)
+		return NewBadRequestError(ErrInvalidJSON)
 	}
 
 	if err := c.Validate(req); err != nil {

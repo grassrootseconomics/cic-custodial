@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	contextTimeout = 5
+	contextTimeout = 5 * time.Second
 )
 
 // Bootstrap API server.
@@ -24,11 +24,9 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	server := echo.New()
 	server.HideBanner = true
 	server.HidePort = true
-
 	server.Validator = &api.Validator{
 		ValidatorProvider: customValidator,
 	}
-
 	server.HTTPErrorHandler = customHTTPErrorHandler
 
 	server.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
@@ -39,7 +37,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	})
 	server.Use(middleware.Recover())
 	server.Use(middleware.BodyLimit("1M"))
-	server.Use(middleware.ContextTimeout(time.Duration(contextTimeout * time.Second)))
+	server.Use(middleware.ContextTimeout(contextTimeout))
 
 	if ko.Bool("service.metrics") {
 		server.GET("/metrics", func(c echo.Context) error {
@@ -61,8 +59,7 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 		return
 	}
 
-	he, ok := err.(*echo.HTTPError)
-	if ok {
+	if he, ok := err.(*echo.HTTPError); ok {
 		var errorMsg string
 
 		if m, ok := he.Message.(error); ok {
@@ -75,12 +72,12 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 			Ok:      false,
 			Message: errorMsg,
 		})
-	} else {
-		lo.Error("api: echo error", "path", c.Path(), "err", err)
-
-		c.JSON(http.StatusInternalServerError, api.ErrResp{
-			Ok:      false,
-			Message: "Internal server error.",
-		})
+		return
 	}
+
+	lo.Error("api: echo error", "path", c.Path(), "err", err)
+	c.JSON(http.StatusInternalServerError, api.ErrResp{
+		Ok:      false,
+		Message: "Internal server error.",
+	})
 }

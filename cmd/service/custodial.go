@@ -31,7 +31,10 @@ func initAbis() map[string]*w3.Func {
 
 // Bootstrap the internal custodial system configs and system signer key.
 // This container is passed down to individual tasker and API handlers.
-func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) (*tasker.SystemContainer, error) {
+func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) *tasker.SystemContainer {
+	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
 	// Some custodial system defaults loaded from the config file.
 	systemContainer := &tasker.SystemContainer{
 		Abis:                  initAbis(),
@@ -48,6 +51,7 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) (*tas
 		TokenDecimals:         ko.MustInt("system.token_decimals"),
 		TokenTransferGasLimit: uint64(ko.MustInt64("system.token_transfer_gas_limit")),
 	}
+
 	// Check if system signer account nonce is present.
 	// If not (first boot), we bootstrap it from the network.
 	currentSystemNonce, err := noncestore.Peek(ctx, ko.MustString("system.public_key"))
@@ -56,15 +60,15 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) (*tas
 		nonce, err := noncestore.SyncNetworkNonce(ctx, ko.MustString("system.public_key"))
 		lo.Info("custodial: syncing system nonce", "nonce", nonce)
 		if err != nil {
-			return nil, err
+			lo.Fatal("custodial: critical error bootstrapping system container", "error", err)
 		}
 	}
 
 	loadedPrivateKey, err := eth_crypto.HexToECDSA(ko.MustString("system.private_key"))
 	if err != nil {
-		return nil, err
+		lo.Fatal("custodial: critical error bootstrapping system container", "error", err)
 	}
 	systemContainer.PrivateKey = loadedPrivateKey
 
-	return systemContainer, nil
+	return systemContainer
 }

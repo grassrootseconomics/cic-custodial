@@ -60,6 +60,7 @@ func (s *PostgresStore) GetTxStatusByTrackingId(ctx context.Context, trackingId 
 }
 
 func (s *PostgresStore) UpdateOtxStatusFromChainEvent(ctx context.Context, chainEvent MinimalTxInfo) error {
+	
 	var (
 		status = enum.SUCCESS
 	)

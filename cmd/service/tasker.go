@@ -10,8 +10,6 @@ import (
 
 // Load tasker handlers, injecting any necessary handler dependencies from the system container.
 func initTasker(custodialContainer *custodial.Custodial, redisPool *redis.RedisPool) *tasker.TaskerServer {
-	lo.Debug("Bootstrapping tasker")
-
 	taskerServerOpts := tasker.TaskerServerOpts{
 		Concurrency: ko.MustInt("asynq.worker_count"),
 		Logg:        lo,

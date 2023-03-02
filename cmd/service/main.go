@@ -3,17 +3,23 @@ package main
 import (
 	"context"
 	"flag"
-	"os"
-	"os/signal"
 	"strings"
 	"sync"
-	"syscall"
 
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
+	"github.com/grassrootseconomics/cic-custodial/internal/events"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/knadh/koanf/v2"
 	"github.com/labstack/echo/v4"
 	"github.com/zerodha/logf"
+)
+
+type (
+	internalServiceContainer struct {
+		apiService    *echo.Echo
+		jetstreamSub  *events.JetStream
+		taskerService *tasker.TaskerServer
+	}
 )
 
 var (
@@ -33,63 +39,25 @@ func init() {
 	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
 	flag.Parse()
 
-	lo = initLogger(debugFlag)
-	ko = initConfig(confFlag)
+	lo = initLogger()
+	ko = initConfig()
 }
 
 func main() {
-	var (
-		tasker    *tasker.TaskerServer
-		apiServer *echo.Echo
-	)
+	parsedQueries := initQueries()
+	celoProvider := initCeloProvider()
+	postgresPool := initPostgresPool()
+	asynqRedisPool := initAsynqRedisPool()
+	redisPool := initCommonRedisPool()
 
-	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
-	defer stop()
-
-	queries, err := initQueries(queriesFlag)
-	if err != nil {
-		lo.Fatal("main: critical error loading SQL queries", "error", err)
-	}
-
-	celoProvider, err := initCeloProvider()
-	if err != nil {
-		lo.Fatal("main: critical error loading chain provider", "error", err)
-	}
-
-	postgresPool, err := initPostgresPool()
-	if err != nil {
-		lo.Fatal("main: critical error connecting to postgres", "error", err)
-	}
-
-	asynqRedisPool, err := initAsynqRedisPool()
-	if err != nil {
-		lo.Fatal("main: critical error connecting to asynq redis db", "error", err)
-	}
-
-	redisPool, err := initCommonRedisPool()
-	if err != nil {
-		lo.Fatal("main: critical error connecting to common redis db", "error", err)
-	}
-
-	postgresKeystore, err := initPostgresKeystore(postgresPool, queries)
-	if err != nil {
-		lo.Fatal("main: critical error loading keystore")
-	}
-
-	jsEventEmitter, err := initJetStream()
-	if err != nil {
-		lo.Fatal("main: critical error loading jetstream event emitter")
-	}
-
-	pgStore := initPostgresStore(postgresPool, queries)
+	postgresKeystore := initPostgresKeystore(postgresPool, parsedQueries)
+	pgStore := initPostgresStore(postgresPool, parsedQueries)
 	redisNoncestore := initRedisNoncestore(redisPool, celoProvider)
 	lockProvider := initLockProvider(redisPool.Client)
 	taskerClient := initTaskerClient(asynqRedisPool)
+	systemContainer := initSystemContainer(context.Background(), redisNoncestore)
 
-	systemContainer, err := initSystemContainer(context.Background(), redisNoncestore)
-	if err != nil {
-		lo.Fatal("main: critical error bootstrapping system container", "error", err)
-	}
+	jsEventEmitter := initJetStream(pgStore)
 
 	custodial := &custodial.Custodial{
 		CeloProvider:    celoProvider,
@@ -102,14 +70,18 @@ func main() {
 		TaskerClient:    taskerClient,
 	}
 
+	internalServices := &internalServiceContainer{}
 	wg := &sync.WaitGroup{}
 
-	apiServer = initApiServer(custodial)
+	signalCh, closeCh := createSigChannel()
+	defer closeCh()
+
+	internalServices.apiService = initApiServer(custodial)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		lo.Info("main: starting API server")
-		if err := apiServer.Start(ko.MustString("service.address")); err != nil {
+		if err := internalServices.apiService.Start(ko.MustString("service.address")); err != nil {
 			if strings.Contains(err.Error(), "Server closed") {
 				lo.Info("main: shutting down server")
 			} else {
@@ -118,34 +90,28 @@ func main() {
 		}
 	}()
 
-	tasker = initTasker(custodial, asynqRedisPool)
+	internalServices.taskerService = initTasker(custodial, asynqRedisPool)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
 		lo.Info("Starting tasker")
-		if err := tasker.Start(); err != nil {
+		if err := internalServices.taskerService.Start(); err != nil {
 			lo.Fatal("main: could not start task server", "err", err)
 		}
 	}()
 
+	internalServices.jetstreamSub = jsEventEmitter
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		lo.Info("Starting jetstream subscriber")
-		if err := jsEventEmitter.ChainSubscription(ctx, pgStore); err != nil {
-			lo.Fatal("main: jetstream subscriber", "err", err)
+		lo.Info("Starting jetstream sub")
+		if err := internalServices.jetstreamSub.Subscriber(); err != nil {
+			lo.Fatal("main: error running jetstream sub", "err", err)
 		}
 	}()
 
-	<-ctx.Done()
-
-	lo.Info("main: stopping tasker")
-	tasker.Stop()
-
-	lo.Info("main: stopping api server")
-	if err := apiServer.Shutdown(ctx); err != nil {
-		lo.Error("Could not gracefully shutdown api server", "err", err)
-	}
+	<-signalCh
+	startGracefulShutdown(context.Background(), internalServices)
 
 	wg.Wait()
 }
