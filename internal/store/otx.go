@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 )
 
 type TxStatus struct {
@@ -58,6 +59,24 @@ func (s *PostgresStore) GetTxStatusByTrackingId(ctx context.Context, trackingId 
 	return txs, nil
 }
 
-func (s *PostgresStore) UpdateOtxStatus(ctx context.Context, status string) error {
+func (s *PostgresStore) UpdateOtxStatusFromChainEvent(ctx context.Context, chainEvent MinimalTxInfo) error {
+	var (
+		status = enum.SUCCESS
+	)
+
+	if !chainEvent.Success {
+		status = enum.REVERTED
+	}
+
+	if _, err := s.db.Exec(
+		ctx,
+		s.queries.UpdateChainStatus,
+		chainEvent.TxHash,
+		status,
+		chainEvent.Block,
+	); err != nil {
+		return err
+	}
+
 	return nil
 }

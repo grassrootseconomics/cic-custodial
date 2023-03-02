@@ -48,12 +48,14 @@ func initConfig(configFilePath string) *koanf.Koanf {
 		lo.Fatal("Could not load config file", "error", err)
 	}
 
-	if err := ko.Load(env.Provider("", ".", func(s string) string {
+	if err := ko.Load(env.Provider("CUSTODIAL_", ".", func(s string) string {
 		return strings.ReplaceAll(strings.ToLower(
-			strings.TrimPrefix(s, "")), "_", ".")
+			strings.TrimPrefix(s, "CUSTODIAL_")), "__", ".")
 	}), nil); err != nil {
 		lo.Fatal("Could not override config from env vars", "error", err)
 	}
+
+	ko.Print()
 
 	return ko
 }
@@ -180,6 +182,7 @@ func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) sto
 // Init JetStream context for tasker events.
 func initJetStream() (*events.JetStream, error) {
 	jsEmitter, err := events.NewJetStreamEventEmitter(events.JetStreamOpts{
+		Logg:            lo,
 		ServerUrl:       ko.MustString("jetstream.endpoint"),
 		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hrs")) * time.Hour,
 		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hrs")) * time.Hour,

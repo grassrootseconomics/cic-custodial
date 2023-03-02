@@ -7,6 +7,7 @@ metrics = true
 [chain]
 rpc_endpoint = ""
 testnet = true
+devnet = false
 
 [system]
 # System default values

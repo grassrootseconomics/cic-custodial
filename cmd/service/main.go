@@ -128,6 +128,15 @@ func main() {
 		}
 	}()
 
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		lo.Info("Starting jetstream subscriber")
+		if err := jsEventEmitter.ChainSubscription(ctx, pgStore); err != nil {
+			lo.Fatal("main: jetstream subscriber", "err", err)
+		}
+	}()
+
 	<-ctx.Done()
 
 	lo.Info("main: stopping tasker")

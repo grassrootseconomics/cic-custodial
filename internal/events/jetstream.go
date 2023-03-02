@@ -23,14 +23,14 @@ const (
 )
 
 type JetStreamOpts struct {
-	Logg logf.Logger
+	Logg            logf.Logger
 	ServerUrl       string
 	PersistDuration time.Duration
 	DedupDuration   time.Duration
 }
 
 type JetStream struct {
-	logg logf.Logger
+	logg     logf.Logger
 	jsCtx    nats.JetStreamContext
 	natsConn *nats.Conn
 }
@@ -62,6 +62,7 @@ func NewJetStreamEventEmitter(o JetStreamOpts) (*JetStream, error) {
 	}
 
 	return &JetStream{
+		logg:     o.Logg,
 		jsCtx:    js,
 		natsConn: natsConn,
 	}, nil

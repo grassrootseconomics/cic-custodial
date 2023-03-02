@@ -7,6 +7,16 @@ import (
 )
 
 type (
+	MinimalTxInfo struct {
+		Block           uint64 `json:"block"`
+		From            string `json:"from"`
+		To              string `json:"to"`
+		ContractAddress string `json:"contractAddress"`
+		Success         bool   `json:"success"`
+		TxHash          string `json:"transactionHash"`
+		TxIndex         uint   `json:"transactionIndex"`
+		Value           uint64 `json:"value"`
+	}
 	OTX struct {
 		TrackingId    string
 		Type          enum.OtxType
@@ -29,6 +39,6 @@ type (
 		CreateOtx(ctx context.Context, otx OTX) (id uint, err error)
 		CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) error
 		GetTxStatusByTrackingId(ctx context.Context, trackingId string) ([]*TxStatus, error)
-		UpdateChainStatus(ctx context.Context, txHash string, status enum.OtxStatus, block uint64) error
+		UpdateOtxStatusFromChainEvent(ctx context.Context, chainEvent MinimalTxInfo) error
 	}
 )
