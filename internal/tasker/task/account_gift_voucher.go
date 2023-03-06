@@ -79,7 +79,7 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 
 		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
 			TrackingId:    payload.TrackingId,
-			Type:          enum.ACCOUNT_REGISTER,
+			Type:          enum.GIFT_VOUCHER,
 			RawTx:         hexutil.Encode(rawTx),
 			TxHash:        builtTx.Hash().Hex(),
 			From:          cu.SystemContainer.PublicKey,
