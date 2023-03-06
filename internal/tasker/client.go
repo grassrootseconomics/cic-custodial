@@ -10,17 +10,16 @@ import (
 )
 
 const (
-	taskTimeout = 60
+	taskTimeout   = 60 * time.Second
+	taskRetention = 48 * time.Hour
 )
 
 type TaskerClientOpts struct {
-	RedisPool     *redis.RedisPool
-	TaskRetention time.Duration
+	RedisPool *redis.RedisPool
 }
 
 type TaskerClient struct {
-	Client        *asynq.Client
-	taskRetention time.Duration
+	Client *asynq.Client
 }
 
 func NewTaskerClient(o TaskerClientOpts) *TaskerClient {
@@ -39,8 +38,8 @@ func (c *TaskerClient) CreateTask(ctx context.Context, taskName TaskName, queueN
 		task.Payload,
 		asynq.Queue(string(queueName)),
 		asynq.TaskID(task.Id),
-		asynq.Retention(c.taskRetention),
-		asynq.Timeout(taskTimeout*time.Second),
+		asynq.Retention(taskRetention),
+		asynq.Timeout(taskTimeout),
 	)
 
 	taskInfo, err := c.Client.EnqueueContext(ctx, qTask)

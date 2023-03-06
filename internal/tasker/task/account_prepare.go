@@ -6,7 +6,7 @@ import (
 	"fmt"
 
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/events"
+	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/hibiken/asynq"
 )
@@ -64,12 +64,12 @@ func AccountPrepare(cu *custodial.Custodial) func(context.Context, *asynq.Task) 
 			return err
 		}
 
-		eventPayload := events.EventPayload{
+		eventPayload := pub.EventPayload{
 			TrackingId: payload.TrackingId,
 		}
 
-		if err := cu.EventEmitter.Publish(
-			events.AccountNewNonce,
+		if err := cu.Pub.Publish(
+			pub.AccountNewNonce,
 			payload.PublicKey,
 			eventPayload,
 		); err != nil {

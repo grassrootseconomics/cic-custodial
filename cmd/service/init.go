@@ -7,11 +7,13 @@ import (
 
 	"github.com/bsm/redislock"
 	"github.com/grassrootseconomics/celoutils"
-	"github.com/grassrootseconomics/cic-custodial/internal/events"
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
+	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/queries"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
+	"github.com/grassrootseconomics/cic-custodial/internal/sub"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/logg"
 	"github.com/grassrootseconomics/cic-custodial/pkg/postgres"
@@ -22,6 +24,7 @@ import (
 	"github.com/knadh/koanf/providers/env"
 	"github.com/knadh/koanf/providers/file"
 	"github.com/knadh/koanf/v2"
+	"github.com/nats-io/nats.go"
 	"github.com/zerodha/logf"
 )
 
@@ -46,14 +49,14 @@ func initConfig() *koanf.Koanf {
 
 	confFile := file.Provider(confFlag)
 	if err := ko.Load(confFile, toml.Parser()); err != nil {
-		lo.Fatal("Could not load config file", "error", err)
+		lo.Fatal("init: could not load config file", "error", err)
 	}
 
 	if err := ko.Load(env.Provider("CUSTODIAL_", ".", func(s string) string {
 		return strings.ReplaceAll(strings.ToLower(
 			strings.TrimPrefix(s, "CUSTODIAL_")), "__", ".")
 	}), nil); err != nil {
-		lo.Fatal("Could not override config from env vars", "error", err)
+		lo.Fatal("init: could not override config from env vars", "error", err)
 	}
 
 	if debugFlag {
@@ -169,12 +172,11 @@ func initLockProvider(redisPool redislock.RedisClient) *redislock.Client {
 // Load tasker client.
 func initTaskerClient(redisPool *redis.RedisPool) *tasker.TaskerClient {
 	return tasker.NewTaskerClient(tasker.TaskerClientOpts{
-		RedisPool:     redisPool,
-		TaskRetention: time.Duration(ko.MustInt64("asynq.task_retention_hrs")) * time.Hour,
+		RedisPool: redisPool,
 	})
 }
 
-// Load Postgres store
+// Load Postgres store.
 func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) store.Store {
 	return store.NewPostgresStore(store.Opts{
 		PostgresPool: postgresPool,
@@ -182,20 +184,44 @@ func initPostgresStore(postgresPool *pgxpool.Pool, queries *queries.Queries) sto
 	})
 }
 
-// Init JetStream context for tasker events.
-func initJetStream(pgStore store.Store) *events.JetStream {
-	jsEmitter, err := events.NewJetStreamEventEmitter(events.JetStreamOpts{
-		Logg:            lo,
-		PgStore:         pgStore,
-		ServerUrl:       ko.MustString("jetstream.endpoint"),
-		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hrs")) * time.Hour,
-		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hrs")) * time.Hour,
-	})
-
+// Init JetStream context for both pub/sub.
+func initJetStream() (*nats.Conn, nats.JetStreamContext) {
+	natsConn, err := nats.Connect(ko.MustString("jetstream.endpoint"))
 	if err != nil {
-		lo.Fatal("main: critical error loading jetstream event emitter")
+		lo.Fatal("init: critical error connecting to NATS", "error", err)
+	}
+
+	js, err := natsConn.JetStream()
+	if err != nil {
+		lo.Fatal("init: bad JetStream opts", "error", err)
 
 	}
 
-	return jsEmitter
+	return natsConn, js
+}
+
+func initPub(jsCtx nats.JetStreamContext) *pub.Pub {
+	pub, err := pub.NewPub(pub.PubOpts{
+		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hrs")) * time.Hour,
+		JsCtx:           jsCtx,
+		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hrs")) * time.Hour,
+	})
+	if err != nil {
+		lo.Fatal("init: critical error bootstrapping pub", "error", err)
+	}
+
+	return pub
+}
+func initSub(natsConn *nats.Conn, jsCtx nats.JetStreamContext, cu *custodial.Custodial) *sub.Sub {
+	sub, err := sub.NewSub(sub.SubOpts{
+		CustodialContainer: cu,
+		JsCtx:              jsCtx,
+		Logg:               lo,
+		NatsConn:           natsConn,
+	})
+	if err != nil {
+		lo.Fatal("init: critical error bootstrapping sub", "error", err)
+	}
+
+	return sub
 }

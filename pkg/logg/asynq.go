@@ -13,21 +13,21 @@ func AsynqCompatibleLogger(lo logf.Logger) AsynqLogger {
 }
 
 func (l AsynqLogger) Debug(args ...interface{}) {
-	l.Lo.Debug("asynq", "debug", args[0])
+	l.Lo.Debug("asynq: server", "msg", args[0])
 }
 
 func (l AsynqLogger) Info(args ...interface{}) {
-	l.Lo.Info("asynq", "info", args[0])
+	l.Lo.Info("asynq: server", "msg", args[0])
 }
 
 func (l AsynqLogger) Warn(args ...interface{}) {
-	l.Lo.Warn("asynq", "warn", args[0])
+	l.Lo.Warn("asynq: server", "msg", args[0])
 }
 
 func (l AsynqLogger) Error(args ...interface{}) {
-	l.Lo.Error("asynq", "error", args[0])
+	l.Lo.Error("asynq: server", "msg", args[0])
 }
 
 func (l AsynqLogger) Fatal(args ...interface{}) {
-	l.Lo.Fatal("asynq", "fatal", args[0])
+	l.Lo.Fatal("asynq: server", "msg", args[0])
 }

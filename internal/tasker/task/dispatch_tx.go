@@ -9,7 +9,7 @@ import (
 	"github.com/celo-org/celo-blockchain/core/types"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/events"
+	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
@@ -26,7 +26,7 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 		var (
 			payload        TxPayload
 			dispatchStatus store.DispatchStatus
-			eventPayload   events.EventPayload
+			eventPayload   pub.EventPayload
 			dispathchTx    common.Hash
 		)
 
@@ -58,7 +58,7 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 				return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 			}
 
-			if err := cu.EventEmitter.Publish(events.DispatchFail, txHash, eventPayload); err != nil {
+			if err := cu.Pub.Publish(pub.DispatchFail, txHash, eventPayload); err != nil {
 				return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 			}
 
@@ -71,7 +71,7 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 		}
 
-		if err := cu.EventEmitter.Publish(events.DispatchSuccess, txHash, eventPayload); err != nil {
+		if err := cu.Pub.Publish(pub.DispatchSuccess, txHash, eventPayload); err != nil {
 			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 		}
 

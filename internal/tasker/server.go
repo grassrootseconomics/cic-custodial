@@ -4,22 +4,24 @@ import (
 	"context"
 	"time"
 
-	"github.com/bsm/redislock"
+	"github.com/grassrootseconomics/cic-custodial/pkg/logg"
 	"github.com/grassrootseconomics/cic-custodial/pkg/redis"
 	"github.com/hibiken/asynq"
 	"github.com/zerodha/logf"
 )
 
 const (
-	fixedRetryCount  = 25
-	fixedRetryPeriod = time.Second * 1
+	retryRequeueInterval = 2 * time.Second
 )
 
 type TaskerServerOpts struct {
-	Concurrency int
-	Logg        logf.Logger
-	LogLevel    asynq.LogLevel
-	RedisPool   *redis.RedisPool
+	Concurrency      int
+	ErrorHandler     asynq.ErrorHandler
+	IsFailureHandler func(error) bool
+	Logg             logf.Logger
+	LogLevel         asynq.LogLevel
+	RedisPool        *redis.RedisPool
+	RetryHandler     asynq.RetryDelayFunc
 }
 
 type TaskerServer struct {
@@ -31,14 +33,17 @@ func NewTaskerServer(o TaskerServerOpts) *TaskerServer {
 	server := asynq.NewServer(
 		o.RedisPool,
 		asynq.Config{
-			Concurrency: o.Concurrency,
-			IsFailure:   expectedFailures,
-			LogLevel:    o.LogLevel,
+			Concurrency:              o.Concurrency,
+			DelayedTaskCheckInterval: retryRequeueInterval,
+			ErrorHandler:             o.ErrorHandler,
+			IsFailure:                o.IsFailureHandler,
+			LogLevel:                 o.LogLevel,
+			Logger:                   logg.AsynqCompatibleLogger(o.Logg),
 			Queues: map[string]int{
-				string(HighPriority):    5,
-				string(DefaultPriority): 2,
+				string(HighPriority):    7,
+				string(DefaultPriority): 3,
 			},
-			RetryDelayFunc: retryDelay,
+			RetryDelayFunc: o.RetryHandler,
 		},
 	)
 
@@ -48,6 +53,10 @@ func NewTaskerServer(o TaskerServerOpts) *TaskerServer {
 		mux:    mux,
 		server: server,
 	}
+}
+
+func (ts *TaskerServer) RegisterMiddlewareStack(middlewareStack []asynq.MiddlewareFunc) {
+	ts.mux.Use(middlewareStack...)
 }
 
 func (ts *TaskerServer) RegisterHandlers(taskName TaskName, taskHandler func(context.Context, *asynq.Task) error) {
@@ -65,23 +74,4 @@ func (ts *TaskerServer) Start() error {
 func (ts *TaskerServer) Stop() {
 	ts.server.Stop()
 	ts.server.Shutdown()
-}
-
-func expectedFailures(err error) bool {
-	switch err {
-	// Ignore lock contention errors; retry until lock obtain.
-	case redislock.ErrNotObtained:
-		return false
-	default:
-		return true
-	}
-}
-
-// Immidiatel
-func retryDelay(count int, err error, task *asynq.Task) time.Duration {
-	if count < fixedRetryCount {
-		return fixedRetryPeriod
-	} else {
-		return asynq.DefaultRetryDelayFunc(count, err, task)
-	}
 }

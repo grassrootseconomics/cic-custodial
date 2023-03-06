@@ -7,7 +7,7 @@ import (
 	"sync"
 
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/events"
+	"github.com/grassrootseconomics/cic-custodial/internal/sub"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/knadh/koanf/v2"
 	"github.com/labstack/echo/v4"
@@ -17,7 +17,7 @@ import (
 type (
 	internalServiceContainer struct {
 		apiService    *echo.Echo
-		jetstreamSub  *events.JetStream
+		jetstreamSub  *sub.Sub
 		taskerService *tasker.TaskerServer
 	}
 )
@@ -57,15 +57,16 @@ func main() {
 	taskerClient := initTaskerClient(asynqRedisPool)
 	systemContainer := initSystemContainer(context.Background(), redisNoncestore)
 
-	jsEventEmitter := initJetStream(pgStore)
+	natsConn, jsCtx := initJetStream()
+	jsPub := initPub(jsCtx)
 
 	custodial := &custodial.Custodial{
 		CeloProvider:    celoProvider,
-		EventEmitter:    jsEventEmitter,
 		Keystore:        postgresKeystore,
 		LockProvider:    lockProvider,
 		Noncestore:      redisNoncestore,
 		PgStore:         pgStore,
+		Pub:             jsPub,
 		SystemContainer: systemContainer,
 		TaskerClient:    taskerClient,
 	}
@@ -80,8 +81,9 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		lo.Info("main: starting API server")
-		if err := internalServices.apiService.Start(ko.MustString("service.address")); err != nil {
+		host := ko.MustString("service.address")
+		lo.Info("main: starting API server", "host", host)
+		if err := internalServices.apiService.Start(host); err != nil {
 			if strings.Contains(err.Error(), "Server closed") {
 				lo.Info("main: shutting down server")
 			} else {
@@ -94,23 +96,23 @@ func main() {
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		lo.Info("Starting tasker")
+		lo.Info("main: starting tasker")
 		if err := internalServices.taskerService.Start(); err != nil {
 			lo.Fatal("main: could not start task server", "err", err)
 		}
 	}()
 
-	internalServices.jetstreamSub = jsEventEmitter
+	internalServices.jetstreamSub = initSub(natsConn, jsCtx, custodial)
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		lo.Info("Starting jetstream sub")
-		if err := internalServices.jetstreamSub.Subscriber(); err != nil {
+		lo.Info("main: starting jetstream sub")
+		if err := internalServices.jetstreamSub.Process(); err != nil {
 			lo.Fatal("main: error running jetstream sub", "err", err)
 		}
 	}()
 
-	<-signalCh
+	lo.Info("main: graceful shutdown triggered", "signal", <-signalCh)
 	startGracefulShutdown(context.Background(), internalServices)
 
 	wg.Wait()

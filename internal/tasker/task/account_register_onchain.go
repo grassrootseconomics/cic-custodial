@@ -8,7 +8,7 @@ import (
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/events"
+	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
@@ -113,14 +113,14 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 			return err
 		}
 
-		eventPayload := &events.EventPayload{
+		eventPayload := &pub.EventPayload{
 			OtxId:      id,
 			TrackingId: payload.TrackingId,
 			TxHash:     builtTx.Hash().Hex(),
 		}
 
-		if err := cu.EventEmitter.Publish(
-			events.AccountRegister,
+		if err := cu.Pub.Publish(
+			pub.AccountRegister,
 			builtTx.Hash().Hex(),
 			eventPayload,
 		); err != nil {

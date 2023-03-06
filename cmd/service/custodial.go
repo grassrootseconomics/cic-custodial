@@ -7,8 +7,8 @@ import (
 
 	eth_crypto "github.com/celo-org/celo-blockchain/crypto"
 	"github.com/go-redis/redis/v8"
+	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
-	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/w3-celo-patch"
 )
 
@@ -31,12 +31,12 @@ func initAbis() map[string]*w3.Func {
 
 // Bootstrap the internal custodial system configs and system signer key.
 // This container is passed down to individual tasker and API handlers.
-func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) *tasker.SystemContainer {
+func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) *custodial.SystemContainer {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
 	// Some custodial system defaults loaded from the config file.
-	systemContainer := &tasker.SystemContainer{
+	systemContainer := &custodial.SystemContainer{
 		Abis:                  initAbis(),
 		AccountIndexContract:  w3.A(ko.MustString("system.account_index_address")),
 		GasFaucetContract:     w3.A(ko.MustString("system.gas_faucet_address")),
@@ -55,10 +55,10 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) *task
 	// Check if system signer account nonce is present.
 	// If not (first boot), we bootstrap it from the network.
 	currentSystemNonce, err := noncestore.Peek(ctx, ko.MustString("system.public_key"))
-	lo.Info("custodial: loaded (noncestore) system nonce", "nonce", currentSystemNonce)
+	lo.Info("custodial: loaded system nonce from noncestore", "nonce", currentSystemNonce)
 	if err == redis.Nil {
 		nonce, err := noncestore.SyncNetworkNonce(ctx, ko.MustString("system.public_key"))
-		lo.Info("custodial: syncing system nonce", "nonce", nonce)
+		lo.Info("custodial: syncing system nonce from network", "nonce", nonce)
 		if err != nil {
 			lo.Fatal("custodial: critical error bootstrapping system container", "error", err)
 		}
