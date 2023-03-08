@@ -54,7 +54,7 @@ jobs:
         cache-to: type=local,dest=/tmp/.buildx-cache
         tags: |
           ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:latest
-          ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:v${{ env.RELEASE_TAG }}
+          ghcr.io/grassrootseconomics/cic-custodial/cic-custodial:${{ env.RELEASE_TAG }}
 
   goreleaser:
     runs-on: ubuntu-latest
