@@ -28,7 +28,7 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			cu.SystemContainer.LockPrefix+cu.SystemContainer.PublicKey,
+			lockPrefix+cu.SystemContainer.PublicKey,
 			cu.SystemContainer.LockTimeout,
 			nil,
 		)

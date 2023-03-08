@@ -40,5 +40,10 @@ type (
 		CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) error
 		GetTxStatusByTrackingId(ctx context.Context, trackingId string) ([]*TxStatus, error)
 		UpdateOtxStatusFromChainEvent(ctx context.Context, chainEvent MinimalTxInfo) error
+		GetAccountStatusByAddress(ctx context.Context, publicAddress string) (bool, int, error)
+		GetAccountActivationQuorum(ctx context.Context, trackingId string) (int, error)
+		DecrGasQuota(ctx context.Context, publicAddress string) error
+		ResetGasQuota(ctx context.Context, publicAddress string) error
+		ActivateAccount(ctx context.Context, publicAddress string) error
 	}
 )

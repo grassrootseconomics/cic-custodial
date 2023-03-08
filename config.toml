@@ -17,7 +17,6 @@ devnet = false
 
 # All addresses MUST be checksumed
 account_index_address = ""
-lock_prefix = "lock:"
 gas_faucet_address = ""
 gas_refill_threshold = 2500000000000000
 gas_refill_value = 10000000000000000

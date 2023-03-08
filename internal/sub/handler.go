@@ -23,7 +23,9 @@ func (s *Sub) handler(ctx context.Context, msg *nats.Msg) error {
 
 	switch msg.Subject {
 	case "CHAIN.gas":
-		//
+		if err := s.cu.PgStore.ResetGasQuota(ctx, checksum(chainEvent.To)); err != nil {
+			return err
+		}
 	}
 
 	return nil

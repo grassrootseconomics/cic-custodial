@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
 
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
@@ -14,6 +15,10 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
+)
+
+const (
+	accountActivationCheckDelay = 5 * time.Second
 )
 
 func AccountGiftGasProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
@@ -29,7 +34,7 @@ func AccountGiftGasProcessor(cu *custodial.Custodial) func(context.Context, *asy
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			cu.SystemContainer.LockPrefix+cu.SystemContainer.PublicKey,
+			lockPrefix+cu.SystemContainer.PublicKey,
 			cu.SystemContainer.LockTimeout,
 			nil,
 		)
@@ -100,6 +105,19 @@ func AccountGiftGasProcessor(cu *custodial.Custodial) func(context.Context, *asy
 			&tasker.Task{
 				Payload: disptachJobPayload,
 			},
+		)
+		if err != nil {
+			return err
+		}
+
+		_, err = cu.TaskerClient.CreateTask(
+			ctx,
+			tasker.AccountActivateTask,
+			tasker.DefaultPriority,
+			&tasker.Task{
+				Payload: t.Payload(),
+			},
+			asynq.ProcessIn(accountActivationCheckDelay),
 		)
 		if err != nil {
 			return err

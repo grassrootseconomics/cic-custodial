@@ -28,18 +28,23 @@ func NewTaskerClient(o TaskerClientOpts) *TaskerClient {
 	}
 }
 
-func (c *TaskerClient) CreateTask(ctx context.Context, taskName TaskName, queueName QueueName, task *Task) (*asynq.TaskInfo, error) {
+func (c *TaskerClient) CreateTask(ctx context.Context, taskName TaskName, queueName QueueName, task *Task, extraOpts ...asynq.Option) (*asynq.TaskInfo, error) {
 	if task.Id == "" {
 		task.Id = uuid.NewString()
 	}
 
-	qTask := asynq.NewTask(
-		string(taskName),
-		task.Payload,
+	defaultOpts := []asynq.Option{
 		asynq.Queue(string(queueName)),
 		asynq.TaskID(task.Id),
 		asynq.Retention(taskRetention),
 		asynq.Timeout(taskTimeout),
+	}
+	taskOpts := append(defaultOpts, extraOpts...)
+
+	qTask := asynq.NewTask(
+		string(taskName),
+		task.Payload,
+		taskOpts...
 	)
 
 	taskInfo, err := c.Client.EnqueueContext(ctx, qTask)

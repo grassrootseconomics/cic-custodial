@@ -40,6 +40,21 @@ func HandleSignTransfer(c echo.Context) error {
 		return err
 	}
 
+	accountActive, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(c.Request().Context(), req.From)
+	if !accountActive {
+		return c.JSON(http.StatusForbidden, ErrResp{
+			Ok:      false,
+			Message: "Account pending activation. Try again later.",
+		})
+	}
+
+	if gasQuota < 1 {
+		return c.JSON(http.StatusForbidden, ErrResp{
+			Ok:      false,
+			Message: "Out of gas, refill pending. Try again later.",
+		})
+	}
+
 	trackingId := uuid.NewString()
 	taskPayload, err := json.Marshal(task.TransferPayload{
 		TrackingId:     trackingId,
@@ -61,6 +76,11 @@ func HandleSignTransfer(c echo.Context) error {
 			Payload: taskPayload,
 		},
 	)
+	if err != nil {
+		return err
+	}
+
+	err = cu.PgStore.DecrGasQuota(c.Request().Context(), req.From)
 	if err != nil {
 		return err
 	}

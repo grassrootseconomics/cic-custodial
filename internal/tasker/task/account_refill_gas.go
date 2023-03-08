@@ -3,10 +3,12 @@ package task
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"math/big"
+	"time"
 
 	"github.com/celo-org/celo-blockchain/common/hexutil"
+	"github.com/go-redis/redis/v8"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/pub"
@@ -14,14 +16,17 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch"
-	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/hibiken/asynq"
+)
+
+const (
+	gasLockPrefix = "gas_lock:"
+	gasLockExpiry = 1 * time.Hour
 )
 
 func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
-			balance big.Int
 			err     error
 			payload AccountPayload
 		)
@@ -30,20 +35,25 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			return fmt.Errorf("account: failed %v: %w", err, asynq.SkipRetry)
 		}
 
-		if err := cu.CeloProvider.Client.CallCtx(
-			ctx,
-			eth.Balance(w3.A(payload.PublicKey), nil).Returns(&balance),
-		); err != nil {
+		// TODO: Check eth-faucet whether we can request for a topup before signing the tx.
+		_, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(ctx, payload.PublicKey)
+		if err != nil {
 			return err
 		}
 
-		if belowThreshold := balance.Cmp(cu.SystemContainer.GasRefillThreshold); belowThreshold > 0 {
+		gasLock, err := cu.RedisClient.Get(ctx, gasLockPrefix+payload.PublicKey).Bool()
+		if !errors.Is(err, redis.Nil) {
+			return err
+		}
+
+		if gasQuota > 0 || gasLock {
 			return nil
 		}
 
+		// TODO: Use eth-faucet.
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			cu.SystemContainer.LockPrefix+cu.SystemContainer.PublicKey,
+			lockPrefix+cu.SystemContainer.PublicKey,
 			cu.SystemContainer.LockTimeout,
 			nil,
 		)
@@ -131,6 +141,10 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			builtTx.Hash().Hex(),
 			eventPayload,
 		); err != nil {
+			return err
+		}
+
+		if _, err := cu.RedisClient.SetEX(ctx, gasLockPrefix+payload.PublicKey, true, gasLockExpiry).Result(); err != nil {
 			return err
 		}
 

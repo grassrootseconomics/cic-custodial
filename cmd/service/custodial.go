@@ -45,7 +45,6 @@ func initSystemContainer(ctx context.Context, noncestore nonce.Noncestore) *cust
 		GiftableGasValue:      big.NewInt(ko.MustInt64("system.giftable_gas_value")),
 		GiftableToken:         w3.A(ko.MustString("system.giftable_token_address")),
 		GiftableTokenValue:    big.NewInt(ko.MustInt64("system.giftable_token_value")),
-		LockPrefix:            ko.MustString("system.lock_prefix"),
 		LockTimeout:           1 * time.Second,
 		PublicKey:             ko.MustString("system.public_key"),
 		TokenDecimals:         ko.MustInt("system.token_decimals"),

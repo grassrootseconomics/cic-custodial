@@ -67,6 +67,7 @@ func main() {
 		Noncestore:      redisNoncestore,
 		PgStore:         pgStore,
 		Pub:             jsPub,
+		RedisClient:     redisPool.Client,
 		SystemContainer: systemContainer,
 		TaskerClient:    taskerClient,
 	}

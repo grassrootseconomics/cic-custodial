@@ -39,6 +39,7 @@ func initTasker(custodialContainer *custodial.Custodial, redisPool *redis.RedisP
 	taskerServer.RegisterHandlers(tasker.AccountRegisterTask, task.AccountRegisterOnChainProcessor(custodialContainer))
 	taskerServer.RegisterHandlers(tasker.AccountGiftGasTask, task.AccountGiftGasProcessor(custodialContainer))
 	taskerServer.RegisterHandlers(tasker.AccountGiftVoucherTask, task.GiftVoucherProcessor(custodialContainer))
+	taskerServer.RegisterHandlers(tasker.AccountActivateTask, task.AccountActivateProcessor(custodialContainer))
 	taskerServer.RegisterHandlers(tasker.AccountRefillGasTask, task.AccountRefillGasProcessor(custodialContainer))
 	taskerServer.RegisterHandlers(tasker.SignTransferTask, task.SignTransfer(custodialContainer))
 	taskerServer.RegisterHandlers(tasker.DispatchTxTask, task.DispatchTx(custodialContainer))

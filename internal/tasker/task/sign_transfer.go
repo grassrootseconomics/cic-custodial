@@ -47,7 +47,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			cu.SystemContainer.LockPrefix+payload.From,
+			lockPrefix+payload.From,
 			cu.SystemContainer.LockTimeout,
 			nil,
 		)
@@ -136,7 +136,8 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 
 		gasRefillPayload, err := json.Marshal(AccountPayload{
-			PublicKey: payload.From,
+			PublicKey:  payload.From,
+			TrackingId: payload.TrackingId,
 		})
 		if err != nil {
 			return err

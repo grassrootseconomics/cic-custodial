@@ -29,7 +29,7 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			cu.SystemContainer.LockPrefix+cu.SystemContainer.PublicKey,
+			lockPrefix+cu.SystemContainer.PublicKey,
 			cu.SystemContainer.LockTimeout,
 			nil,
 		)

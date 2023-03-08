@@ -12,7 +12,7 @@ INSERT INTO otx_tx_type (value) VALUES
 -- Origin tx table
 CREATE TABLE IF NOT EXISTS otx_sign (
     id INT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-    tracking_id TEXT NOT NULL,
+    tracking_id uuid NOT NULL,
     "type" TEXT REFERENCES otx_tx_type(value) NOT NULL,
     raw_tx TEXT NOT NULL,
     tx_hash TEXT NOT NULL,
@@ -24,8 +24,9 @@ CREATE TABLE IF NOT EXISTS otx_sign (
     nonce int NOT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
-CREATE INDEX IF NOT EXISTS tx_hash_idx ON otx_sign USING hash(tx_hash);
-CREATE INDEX IF NOT EXISTS from_idx ON otx_sign USING hash("from");
+CREATE INDEX IF NOT EXISTS tracking_id_idx ON otx_sign (tracking_id);
+CREATE INDEX IF NOT EXISTS tx_hash_idx ON otx_sign (tx_hash);
+CREATE INDEX IF NOT EXISTS from_idx ON otx_sign ("from");
 
 -- Otx dispatch status enum table
 -- Enforces referential integrity on the dispatch table

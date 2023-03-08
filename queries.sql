@@ -9,6 +9,11 @@ INSERT INTO keystore(public_key, private_key) VALUES($1, $2) RETURNING id
 -- $1: public_key
 SELECT private_key FROM keystore WHERE public_key=$1
 
+--name: activate-account
+-- Activate an account following successful quorum
+-- $1: public_key
+UPDATE keystore SET active = true WHERE public_key=$1
+
 --name: create-otx
 -- Create a new locally originating tx
 -- $1: tracking_id
@@ -51,7 +56,7 @@ INSERT INTO otx_dispatch(
 UPDATE otx_dispatch SET "status" = $2, "block" = $3 WHERE otx_dispatch.id = (
     SELECT otx_dispatch.id FROM otx_dispatch
     INNER JOIN otx_sign ON otx_dispatch.otx_id = otx_sign.id
-    WHERE otx_sign.tx_hash = $1
+    WHERE otx_sign.tx_hash=$1
     AND otx_dispatch.status = 'IN_NETWORK'
 )
 
@@ -60,6 +65,40 @@ UPDATE otx_dispatch SET "status" = $2, "block" = $3 WHERE otx_dispatch.id = (
 -- $1: tracking_id
 SELECT otx_sign.type, otx_sign.tx_hash, otx_sign.transfer_value, otx_sign.created_at, otx_dispatch.status FROM otx_sign
 INNER JOIN otx_dispatch ON otx_sign.id = otx_dispatch.otx_id
-WHERE otx_sign.tracking_id = $1
+WHERE otx_sign.tracking_id=$1
 
 -- TODO: Scroll by status type with cursor pagination
+
+--name: get-account-activation-quorum
+-- Gets quorum of required and confirmed system transactions for the account
+-- $1: tracking_id
+SELECT count(*) FROM otx_dispatch INNER JOIN
+otx_sign ON otx_dispatch.otx_id = otx_sign.id
+WHERE otx_sign.tracking_id=$1
+AND otx_dispatch.status = 'SUCCESS'
+
+--name: get-account-status-by-address
+-- Gets current gas quota for an individual account by address
+-- $1: public_key
+SELECT keystore.active, gas_quota.quota FROM keystore
+INNER JOIN gas_quota ON keystore.id = gas_quota.key_id
+WHERE keystore.public_key=$1
+
+--name: decr-gas-quota
+-- Consumes a gas quota
+-- $1: public_key
+UPDATE gas_quota SET quota = quota - 1 WHERE key_id = (
+    SELECT id FROM keystore
+    WHERE public_key=$1    
+)
+
+--name: reset-gas-quota
+-- Resets the gas quota
+-- 25 is the agreed upon quota
+-- $1: public_key
+UPDATE gas_quota SET quota = gas_quota_meta.default_quota
+FROM gas_quota_meta
+WHERE key_id = (
+    SELECT id FROM keystore
+    WHERE public_key=$1    
+)

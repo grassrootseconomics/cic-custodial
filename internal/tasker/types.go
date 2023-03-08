@@ -20,6 +20,7 @@ const (
 	AccountGiftGasTask     TaskName = "sys:gift_gas"
 	AccountGiftVoucherTask TaskName = "sys:gift_token"
 	AccountRefillGasTask   TaskName = "sys:refill_gas"
+	AccountActivateTask    TaskName = "sys:quorum_check"
 	SignTransferTask       TaskName = "usr:sign_transfer"
 	DispatchTxTask         TaskName = "rpc:dispatch"
 )

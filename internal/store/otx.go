@@ -59,8 +59,20 @@ func (s *PostgresStore) GetTxStatusByTrackingId(ctx context.Context, trackingId 
 	return txs, nil
 }
 
+func (s *PostgresStore) CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) error {
+	if _, err := s.db.Exec(
+		ctx,
+		s.queries.CreateDispatchStatus,
+		dispatch.OtxId,
+		dispatch.Status,
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *PostgresStore) UpdateOtxStatusFromChainEvent(ctx context.Context, chainEvent MinimalTxInfo) error {
-	
 	var (
 		status = enum.SUCCESS
 	)
