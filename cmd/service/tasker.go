@@ -10,7 +10,6 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker/task"
 	"github.com/grassrootseconomics/cic-custodial/pkg/redis"
 	"github.com/hibiken/asynq"
-	"github.com/zerodha/logf"
 )
 
 const (
@@ -32,7 +31,7 @@ func initTasker(custodialContainer *custodial.Custodial, redisPool *redis.RedisP
 	taskerServer := tasker.NewTaskerServer(taskerServerOpts)
 
 	taskerServer.RegisterMiddlewareStack([]asynq.MiddlewareFunc{
-		observibilityMiddleware(lo),
+		observibilityMiddleware(),
 	})
 
 	taskerServer.RegisterHandlers(tasker.AccountPrepareTask, task.AccountPrepare(custodialContainer))
@@ -65,7 +64,7 @@ func retryHandler(count int, err error, task *asynq.Task) time.Duration {
 	}
 }
 
-func observibilityMiddleware(logg logf.Logger) asynq.MiddlewareFunc {
+func observibilityMiddleware() asynq.MiddlewareFunc {
 	return func(handler asynq.Handler) asynq.Handler {
 		return asynq.HandlerFunc(func(ctx context.Context, task *asynq.Task) error {
 			taskId, _ := asynq.GetTaskID(ctx)
