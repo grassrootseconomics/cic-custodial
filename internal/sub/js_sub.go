@@ -68,7 +68,6 @@ func (s *Sub) Process() error {
 		if err != nil {
 			if errors.Is(err, nats.ErrTimeout) {
 				s.logg.Debug("sub: no msg to pull")
-				time.Sleep(waitDelay)
 				continue
 			} else if errors.Is(err, nats.ErrConnectionClosed) {
 				return nil

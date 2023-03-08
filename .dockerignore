@@ -1,0 +1,10 @@
+.github
+.deepsource.toml
+.goreleaser.yaml
+
+**/.env
+**/.git
+**/.gitignore
+
+**/docker-compose*
+**/Dockerfile*

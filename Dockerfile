@@ -1,20 +1,31 @@
-# build
 FROM golang:1-bullseye as build
-WORKDIR /build
-COPY . .
-RUN CGO_ENABLED=1 GOOS=linux GOARCH=amd64 go build -o cic-custodial -ldflags="-s -w" cmd/service/*.go
 
-# main
+ENV CGO_ENABLED=1
+ENV GOOS=linux
+ENV GOARCH=amd64
+
+ENV BUILD_COMMIT=${BUILD_COMMIT}
+
+WORKDIR /build
+
+COPY go.* .
+RUN go mod download
+
+COPY . .
+RUN go build -o cic-custodial -ldflags="-X main.build=${BUILD_COMMIT} -s -w" cmd/service/*
+
 FROM debian:bullseye-slim
+
 ENV DEBIAN_FRONTEND=noninteractive
-RUN set -x && \
-    apt-get update && \
-    apt-get install -y ca-certificates && \
-    rm -rf /var/cache/apt/archives /var/lib/apt/lists/*
+
 WORKDIR /service
+
+COPY --from=build /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=build /build/cic-custodial .
 COPY migrations migrations/
 COPY config.toml .
 COPY queries.sql .
-CMD ["./cic-custodial"]
+
 EXPOSE 5000
+
+CMD ["./cic-custodial"]

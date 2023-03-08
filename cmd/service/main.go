@@ -23,6 +23,8 @@ type (
 )
 
 var (
+	build string
+
 	confFlag             string
 	debugFlag            bool
 	migrationsFolderFlag string
@@ -34,7 +36,7 @@ var (
 
 func init() {
 	flag.StringVar(&confFlag, "config", "config.toml", "Config file location")
-	flag.BoolVar(&debugFlag, "log", false, "Enable debug logging")
+	flag.BoolVar(&debugFlag, "debug", false, "Enable debug logging")
 	flag.StringVar(&migrationsFolderFlag, "migrations", "migrations/", "Migrations folder location")
 	flag.StringVar(&queriesFlag, "queries", "queries.sql", "Queries file location")
 	flag.Parse()
