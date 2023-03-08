@@ -1,4 +1,4 @@
-# cic-chain-events
+# cic-custodial
 
 ![GitHub release (latest by date)](https://img.shields.io/github/v/release/grassrootseconomics/cic-custodial)
 ![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/grassrootseconomics/cic-custodial/release.yaml)
