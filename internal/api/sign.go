@@ -41,6 +41,10 @@ func HandleSignTransfer(c echo.Context) error {
 	}
 
 	accountActive, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(c.Request().Context(), req.From)
+	if err != nil {
+		return err
+	}
+
 	if !accountActive {
 		return c.JSON(http.StatusForbidden, ErrResp{
 			Ok:      false,

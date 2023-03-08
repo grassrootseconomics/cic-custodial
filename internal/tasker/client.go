@@ -39,12 +39,12 @@ func (c *TaskerClient) CreateTask(ctx context.Context, taskName TaskName, queueN
 		asynq.Retention(taskRetention),
 		asynq.Timeout(taskTimeout),
 	}
-	taskOpts := append(defaultOpts, extraOpts...)
+	defaultOpts = append(defaultOpts, extraOpts...)
 
 	qTask := asynq.NewTask(
 		string(taskName),
 		task.Payload,
-		taskOpts...
+		defaultOpts...,
 	)
 
 	taskInfo, err := c.Client.EnqueueContext(ctx, qTask)
