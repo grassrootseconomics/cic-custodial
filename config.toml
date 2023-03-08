@@ -19,8 +19,8 @@ devnet = false
 account_index_address = ""
 gas_faucet_address = ""
 gas_refill_threshold = 2500000000000000
-gas_refill_value = 10000000000000000
-giftable_gas_value = 10000000000000000
+gas_refill_value = 15000000000000000
+giftable_gas_value = 15000000000000000
 giftable_token_address = ""
 giftable_token_value = 5000000
 # System private key
