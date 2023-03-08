@@ -212,6 +212,7 @@ func initPub(jsCtx nats.JetStreamContext) *pub.Pub {
 
 	return pub
 }
+
 func initSub(natsConn *nats.Conn, jsCtx nats.JetStreamContext, cu *custodial.Custodial) *sub.Sub {
 	sub, err := sub.NewSub(sub.SubOpts{
 		CustodialContainer: cu,

@@ -14,6 +14,7 @@ RUN go mod download
 COPY . .
 RUN go build -o cic-custodial -ldflags="-X main.build=${BUILD_COMMIT} -s -w" cmd/service/*
 
+
 FROM debian:bullseye-slim
 
 ENV DEBIAN_FRONTEND=noninteractive
@@ -25,6 +26,7 @@ COPY --from=build /build/cic-custodial .
 COPY migrations migrations/
 COPY config.toml .
 COPY queries.sql .
+COPY LICENSE .
 
 EXPOSE 5000
 

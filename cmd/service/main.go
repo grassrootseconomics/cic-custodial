@@ -46,6 +46,8 @@ func init() {
 }
 
 func main() {
+	lo.Info("main: starting cic-custodial", "build", build)
+
 	parsedQueries := initQueries()
 	celoProvider := initCeloProvider()
 	postgresPool := initPostgresPool()
