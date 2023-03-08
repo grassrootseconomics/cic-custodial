@@ -8,8 +8,8 @@ import (
 )
 
 const (
-	StreamName         string = "CUSTODIAL"
-	StreamSubjects     string = "CUSTODIAL.*"
+	streamName         string = "CUSTODIAL"
+	streamSubjects     string = "CUSTODIAL.*"
 	AccountNewNonce    string = "CUSTODIAL.accountNewNonce"
 	AccountRegister    string = "CUSTODIAL.accountRegister"
 	AccountGiftGas     string = "CUSTODIAL.systemNewAccountGas"
@@ -39,13 +39,13 @@ type (
 )
 
 func NewPub(o PubOpts) (*Pub, error) {
-	stream, _ := o.JsCtx.StreamInfo(StreamName)
+	stream, _ := o.JsCtx.StreamInfo(streamName)
 	if stream == nil {
 		_, err := o.JsCtx.AddStream(&nats.StreamConfig{
-			Name:       StreamName,
+			Name:       streamName,
 			MaxAge:     o.PersistDuration,
 			Storage:    nats.FileStorage,
-			Subjects:   []string{StreamSubjects},
+			Subjects:   []string{streamSubjects},
 			Duplicates: o.DedupDuration,
 		})
 		if err != nil {
