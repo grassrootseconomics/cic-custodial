@@ -48,7 +48,7 @@ jobs:
         file: ./Dockerfile
         platforms: linux/amd64
         push: true
-        build-args: |-
+        build-args: |
           BUILD_COMMIT=${{ env.RELEASE_SHORT_COMMIT }}        
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache
@@ -92,7 +92,7 @@ jobs:
           go-version: 'stable'
 
       - name: Run GoReleaser
-        uses: goreleaser/goreleaser-action@v4
+        uses: goreleaser/goreleaser-action@v2
         with:
           version: latest
           args: release --rm-dist
