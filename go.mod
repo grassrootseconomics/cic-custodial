@@ -4,11 +4,10 @@ go 1.20
 
 require (
 	github.com/VictoriaMetrics/metrics v1.23.1
-	github.com/bsm/redislock v0.7.2
+	github.com/bsm/redislock v0.9.1
 	github.com/celo-org/celo-blockchain v1.7.2
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-playground/validator/v10 v10.11.2
-	github.com/go-redis/redis/v8 v8.11.5
 	github.com/google/uuid v1.3.0
 	github.com/grassrootseconomics/celoutils v1.1.1
 	github.com/grassrootseconomics/w3-celo-patch v0.2.0
@@ -22,9 +21,12 @@ require (
 	github.com/knadh/koanf/v2 v2.0.0
 	github.com/labstack/echo/v4 v4.10.2
 	github.com/nats-io/nats.go v1.24.0
+	github.com/redis/go-redis/v9 v9.0.2
 	github.com/zerodha/logf v0.5.5
 	golang.org/x/crypto v0.7.0
 )
+
+replace github.com/hibiken/asynq => github.com/grassrootseconomics/asynq v0.25.0
 
 require (
 	filippo.io/edwards25519 v1.0.0 // indirect
@@ -40,7 +42,7 @@ require (
 	github.com/celo-org/celo-bls-go-macos v0.6.3 // indirect
 	github.com/celo-org/celo-bls-go-other v0.6.3 // indirect
 	github.com/celo-org/celo-bls-go-windows v0.6.3 // indirect
-	github.com/cespare/xxhash/v2 v2.1.2 // indirect
+	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/deckarep/golang-set v1.8.0 // indirect
 	github.com/dgryski/go-rendezvous v0.0.0-20200823014737-9f7001d12a5f // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect
@@ -77,6 +79,7 @@ require (
 	github.com/nats-io/nkeys v0.3.0 // indirect
 	github.com/nats-io/nuid v1.0.1 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
+	github.com/onsi/ginkgo v1.16.4 // indirect
 	github.com/onsi/gomega v1.24.1 // indirect
 	github.com/pelletier/go-toml v1.9.5 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

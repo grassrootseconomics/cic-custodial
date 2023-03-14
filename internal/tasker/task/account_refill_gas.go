@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/celo-org/celo-blockchain/common/hexutil"
-	"github.com/go-redis/redis/v8"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/pub"
@@ -17,6 +16,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
+	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -144,7 +144,7 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			return err
 		}
 
-		if _, err := cu.RedisClient.SetEX(ctx, gasLockPrefix+payload.PublicKey, true, gasLockExpiry).Result(); err != nil {
+		if _, err := cu.RedisClient.SetEx(ctx, gasLockPrefix+payload.PublicKey, true, gasLockExpiry).Result(); err != nil {
 			return err
 		}
 
