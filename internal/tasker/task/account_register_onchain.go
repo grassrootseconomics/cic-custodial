@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
@@ -31,7 +32,9 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 			ctx,
 			lockPrefix+cu.SystemContainer.PublicKey,
 			cu.SystemContainer.LockTimeout,
-			nil,
+			&redislock.Options{
+				RetryStrategy: lockRetry(),
+			},
 		)
 		if err != nil {
 			return err
