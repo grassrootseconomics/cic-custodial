@@ -25,4 +25,4 @@ $$ language plpgsql;
 create trigger insert_gas_quota
     after insert on keystore
 for each row
-execute procedure insert_gas_quota()
+execute procedure insert_gas_quota();
