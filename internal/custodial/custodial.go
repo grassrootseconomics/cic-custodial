@@ -7,7 +7,6 @@ import (
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common"
-	"github.com/go-redis/redis/v8"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
@@ -15,6 +14,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/w3-celo-patch"
+	"github.com/redis/go-redis/v9"
 )
 
 type (

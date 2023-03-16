@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	contextTimeout = 5 * time.Second
+	contextTimeout      = 5 * time.Second
+	systemGlobalLockKey = "system:global_lock"
 )
 
 // Bootstrap API server.
@@ -46,8 +47,10 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 		})
 	}
 
-	apiRoute := server.Group("/api")
+	apiRoute := server.Group("/api", systemGlobalLock)
+
 	apiRoute.POST("/account/create", api.HandleAccountCreate)
+	apiRoute.GET("/account/status/:address", api.HandleNetworkAccountStatus)
 	apiRoute.POST("/sign/transfer", api.HandleSignTransfer)
 	apiRoute.GET("/track/:trackingId", api.HandleTrackTx)
 
@@ -80,4 +83,26 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 		Ok:      false,
 		Message: "Internal server error.",
 	})
+}
+
+func systemGlobalLock(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		var (
+			cu = c.Get("cu").(*custodial.Custodial)
+		)
+
+		locked, err := cu.RedisClient.Get(c.Request().Context(), systemGlobalLockKey).Bool()
+		if err != nil {
+			return err
+		}
+
+		if locked {
+			return c.JSON(http.StatusServiceUnavailable, api.ErrResp{
+				Ok:      false,
+				Message: "System manually locked.",
+			})
+		}
+
+		return next(c)
+	}
 }

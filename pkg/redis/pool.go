@@ -4,17 +4,23 @@ import (
 	"context"
 	"time"
 
-	"github.com/go-redis/redis/v8"
+	"github.com/redis/go-redis/v9"
 )
 
-type RedisPoolOpts struct {
-	DSN          string
-	MinIdleConns int
-}
+const (
+	systemGlobalLockKey = "system:global_lock"
+)
 
-type RedisPool struct {
-	Client *redis.Client
-}
+type (
+	RedisPoolOpts struct {
+		DSN          string
+		MinIdleConns int
+	}
+
+	RedisPool struct {
+		Client *redis.Client
+	}
+)
 
 // NewRedisPool creates a reusable connection across the cic-custodial componenent.
 // Note: Each db namespace requires its own connection pool.
@@ -31,8 +37,7 @@ func NewRedisPool(ctx context.Context, o RedisPoolOpts) (*RedisPool, error) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	_, err = redisClient.Ping(ctx).Result()
-	if err != nil {
+	if err := redisClient.SetNX(ctx, systemGlobalLockKey, false, 0).Err(); err != nil {
 		return nil, err
 	}
 

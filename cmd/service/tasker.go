@@ -72,6 +72,8 @@ func observibilityMiddleware() asynq.MiddlewareFunc {
 			err := handler.ProcessTask(ctx, task)
 			if err != nil && isFailureHandler(err) {
 				lo.Error("tasker: handler error", "err", err, "task_type", task.Type(), "task_id", taskId)
+			} else if asynq.IsPanicError(err) {
+				lo.Error("tasker: handler panic", "err", err, "task_type", task.Type(), "task_id", taskId)
 			} else {
 				lo.Info("tasker: process task", "task_type", task.Type(), "task_id", taskId)
 			}

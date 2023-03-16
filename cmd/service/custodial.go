@@ -6,10 +6,10 @@ import (
 	"time"
 
 	eth_crypto "github.com/celo-org/celo-blockchain/crypto"
-	"github.com/go-redis/redis/v8"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
 	"github.com/grassrootseconomics/w3-celo-patch"
+	"github.com/redis/go-redis/v9"
 )
 
 // Define common smart contrcat ABI's that can be injected into the system container.

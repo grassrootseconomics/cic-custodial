@@ -1,7 +1,7 @@
 version: "3.9"
 services:
   redis:
-    image: redis:6-alpine
+    image: redis:7-alpine
     restart: unless-stopped
     command: redis-server --save 60 1 --loglevel warning
     volumes:
@@ -20,9 +20,9 @@ services:
     environment:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_USER=postgres
-      - POSTGRES_DB=cic_custodial
     volumes:
       - cic-custodial-pg:/var/lib/postgresql/data
+      - ./init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
     ports:
       - "127.0.0.1:5432:5432"
     healthcheck:
@@ -37,8 +37,8 @@ services:
     volumes:
       - cic-custodial-nats:/nats/data
     ports:
-      - "4222:4222"
-      - "8222:8222"
+      - "127.0.0.1:4222:4222"
+      - "127.0.0.1:8222:8222"
   asynqmon:
     image: hibiken/asynqmon
     restart: unless-stopped
@@ -48,6 +48,16 @@ services:
       - "127.0.0.1:8080:8080"
     depends_on:
       redis:
+        condition: service_healthy
+  cic-chain-events:
+    image: ghcr.io/grassrootseconomics/cic-chain-events/cic-chain-events:latest
+    restart: unless-stopped    
+    env_file:
+      - events.env
+    ports:
+      - '127.0.0.1:5001:5000'
+    depends_on:
+      postgres:
         condition: service_healthy
 volumes:
   cic-custodial-pg:
