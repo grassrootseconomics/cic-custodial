@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"net/http"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
-	"github.com/redis/go-redis/v9"
 )
 
 const (
@@ -49,9 +47,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 		})
 	}
 
-	apiRoute := server.Group("/api")
-
-	apiRoute.Use(systemGlobalLock)
+	apiRoute := server.Group("/api", systemGlobalLock)
 
 	apiRoute.POST("/account/create", api.HandleAccountCreate)
 	apiRoute.POST("/sign/transfer", api.HandleSignTransfer)
@@ -95,12 +91,12 @@ func systemGlobalLock(next echo.HandlerFunc) echo.HandlerFunc {
 		)
 
 		locked, err := cu.RedisClient.Get(c.Request().Context(), systemGlobalLockKey).Bool()
-		if !errors.Is(err, redis.Nil) {
+		if err != nil {
 			return err
 		}
 
 		if locked {
-			return c.JSON(http.StatusOK, api.ErrResp{
+			return c.JSON(http.StatusServiceUnavailable, api.ErrResp{
 				Ok:      false,
 				Message: "System manually locked.",
 			})
