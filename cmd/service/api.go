@@ -50,6 +50,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	apiRoute := server.Group("/api", systemGlobalLock)
 
 	apiRoute.POST("/account/create", api.HandleAccountCreate)
+	apiRoute.GET("/account/status/:address", api.HandleNetworkAccountStatus)
 	apiRoute.POST("/sign/transfer", api.HandleSignTransfer)
 	apiRoute.GET("/track/:trackingId", api.HandleTrackTx)
 
