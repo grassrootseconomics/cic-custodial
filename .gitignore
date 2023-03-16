@@ -1,4 +1,4 @@
 cic-custodial
 dist
-.env
+**/*.env
 covprofile
