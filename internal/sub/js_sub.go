@@ -83,10 +83,10 @@ func (s *Sub) Process() error {
 			if err := s.handler(ctx, msg); err != nil {
 				s.logg.Error("sub: handler error", "error", err)
 				msg.Nak()
-			} else {
-				s.logg.Debug("sub: processed msg", "subject", msg.Subject)
-				msg.Ack()
 			}
+
+			s.logg.Debug("sub: processed msg", "subject", msg.Subject)
+			msg.Ack()
 			cancel()
 		}
 	}
