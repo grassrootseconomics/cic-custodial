@@ -40,7 +40,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 		})
 	}
 
-	apiRoute := server.Group("/api", systemGlobalLock)
+	apiRoute := server.Group("/api", systemGlobalLock(custodialContainer))
 
 	apiRoute.POST("/account/create", api.HandleAccountCreate(custodialContainer))
 	apiRoute.GET("/account/status/:address", api.HandleNetworkAccountStatus(custodialContainer))
@@ -78,24 +78,22 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 	})
 }
 
-func systemGlobalLock(next echo.HandlerFunc) echo.HandlerFunc {
-	return func(c echo.Context) error {
-		var (
-			cu = c.Get("cu").(*custodial.Custodial)
-		)
+func systemGlobalLock(cu *custodial.Custodial) echo.MiddlewareFunc {
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			locked, err := cu.RedisClient.Get(c.Request().Context(), systemGlobalLockKey).Bool()
+			if err != nil {
+				return err
+			}
 
-		locked, err := cu.RedisClient.Get(c.Request().Context(), systemGlobalLockKey).Bool()
-		if err != nil {
-			return err
+			if locked {
+				return c.JSON(http.StatusServiceUnavailable, api.ErrResp{
+					Ok:      false,
+					Message: "System manually locked.",
+				})
+			}
+
+			return next(c)
 		}
-
-		if locked {
-			return c.JSON(http.StatusServiceUnavailable, api.ErrResp{
-				Ok:      false,
-				Message: "System manually locked.",
-			})
-		}
-
-		return next(c)
 	}
 }
