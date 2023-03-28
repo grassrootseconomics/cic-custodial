@@ -15,49 +15,47 @@ import (
 // CreateAccountHandler route.
 // POST: /api/account/create
 // Returns the public key.
-func HandleAccountCreate(c echo.Context) error {
-	var (
-		cu = c.Get("cu").(*custodial.Custodial)
-	)
+func HandleAccountCreate(cu *custodial.Custodial) func(echo.Context) error {
+	return func(c echo.Context) error {
+		generatedKeyPair, err := keypair.Generate()
+		if err != nil {
+			return err
+		}
 
-	generatedKeyPair, err := keypair.Generate()
-	if err != nil {
-		return err
+		id, err := cu.Keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair)
+		if err != nil {
+			return err
+		}
+
+		trackingId := uuid.NewString()
+		taskPayload, err := json.Marshal(task.AccountPayload{
+			PublicKey:  generatedKeyPair.Public,
+			TrackingId: trackingId,
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = cu.TaskerClient.CreateTask(
+			c.Request().Context(),
+			tasker.AccountPrepareTask,
+			tasker.DefaultPriority,
+			&tasker.Task{
+				Id:      trackingId,
+				Payload: taskPayload,
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, OkResp{
+			Ok: true,
+			Result: H{
+				"publicKey":   generatedKeyPair.Public,
+				"custodialId": id,
+				"trackingId":  trackingId,
+			},
+		})
 	}
-
-	id, err := cu.Keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair)
-	if err != nil {
-		return err
-	}
-
-	trackingId := uuid.NewString()
-	taskPayload, err := json.Marshal(task.AccountPayload{
-		PublicKey:  generatedKeyPair.Public,
-		TrackingId: trackingId,
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = cu.TaskerClient.CreateTask(
-		c.Request().Context(),
-		tasker.AccountPrepareTask,
-		tasker.DefaultPriority,
-		&tasker.Task{
-			Id:      trackingId,
-			Payload: taskPayload,
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, OkResp{
-		Ok: true,
-		Result: H{
-			"publicKey":   generatedKeyPair.Public,
-			"custodialId": id,
-			"trackingId":  trackingId,
-		},
-	})
 }

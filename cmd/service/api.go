@@ -29,12 +29,6 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	}
 	server.HTTPErrorHandler = customHTTPErrorHandler
 
-	server.Use(func(next echo.HandlerFunc) echo.HandlerFunc {
-		return func(c echo.Context) error {
-			c.Set("cu", custodialContainer)
-			return next(c)
-		}
-	})
 	server.Use(middleware.Recover())
 	server.Use(middleware.BodyLimit("1M"))
 	server.Use(middleware.ContextTimeout(contextTimeout))
@@ -48,10 +42,10 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 
 	apiRoute := server.Group("/api", systemGlobalLock)
 
-	apiRoute.POST("/account/create", api.HandleAccountCreate)
-	apiRoute.GET("/account/status/:address", api.HandleNetworkAccountStatus)
-	apiRoute.POST("/sign/transfer", api.HandleSignTransfer)
-	apiRoute.GET("/track/:trackingId", api.HandleTrackTx)
+	apiRoute.POST("/account/create", api.HandleAccountCreate(custodialContainer))
+	apiRoute.GET("/account/status/:address", api.HandleNetworkAccountStatus(custodialContainer))
+	apiRoute.POST("/sign/transfer", api.HandleSignTransfer(custodialContainer))
+	apiRoute.GET("/track/:trackingId", api.HandleTrackTx(custodialContainer))
 
 	return server
 }

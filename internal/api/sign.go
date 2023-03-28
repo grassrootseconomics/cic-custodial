@@ -21,78 +21,79 @@ import (
 // amount -> int (6 d.p. precision)
 // e.g. 1000000 = 1 VOUCHER
 // Returns the task id.
-func HandleSignTransfer(c echo.Context) error {
-	var (
-		cu  = c.Get("cu").(*custodial.Custodial)
-		req struct {
-			From           string `json:"from" validate:"required,eth_addr_checksum"`
-			To             string `json:"to" validate:"required,eth_addr_checksum"`
-			VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr_checksum"`
-			Amount         uint64 `json:"amount" validate:"required"`
+func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
+	return func(c echo.Context) error {
+		var (
+			req struct {
+				From           string `json:"from" validate:"required,eth_addr_checksum"`
+				To             string `json:"to" validate:"required,eth_addr_checksum"`
+				VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr_checksum"`
+				Amount         uint64 `json:"amount" validate:"required"`
+			}
+		)
+
+		if err := c.Bind(&req); err != nil {
+			return NewBadRequestError(ErrInvalidJSON)
 		}
-	)
 
-	if err := c.Bind(&req); err != nil {
-		return NewBadRequestError(ErrInvalidJSON)
-	}
+		if err := c.Validate(req); err != nil {
+			return err
+		}
 
-	if err := c.Validate(req); err != nil {
-		return err
-	}
+		accountActive, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(c.Request().Context(), req.From)
+		if err != nil {
+			return err
+		}
 
-	accountActive, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(c.Request().Context(), req.From)
-	if err != nil {
-		return err
-	}
+		if !accountActive {
+			return c.JSON(http.StatusForbidden, ErrResp{
+				Ok:      false,
+				Message: "Account pending activation. Try again later.",
+			})
+		}
 
-	if !accountActive {
-		return c.JSON(http.StatusForbidden, ErrResp{
-			Ok:      false,
-			Message: "Account pending activation. Try again later.",
+		if gasQuota < 1 {
+			return c.JSON(http.StatusForbidden, ErrResp{
+				Ok:      false,
+				Message: "Out of gas, refill pending. Try again later.",
+			})
+		}
+
+		trackingId := uuid.NewString()
+		taskPayload, err := json.Marshal(task.TransferPayload{
+			TrackingId:     trackingId,
+			From:           req.From,
+			To:             req.To,
+			VoucherAddress: req.VoucherAddress,
+			Amount:         req.Amount,
+		})
+		if err != nil {
+			return err
+		}
+
+		_, err = cu.TaskerClient.CreateTask(
+			c.Request().Context(),
+			tasker.SignTransferTask,
+			tasker.HighPriority,
+			&tasker.Task{
+				Id:      trackingId,
+				Payload: taskPayload,
+			},
+		)
+		if err != nil {
+			return err
+		}
+
+		err = cu.PgStore.DecrGasQuota(c.Request().Context(), req.From)
+		if err != nil {
+			return err
+		}
+
+		return c.JSON(http.StatusOK, OkResp{
+			Ok: true,
+			Result: H{
+				"trackingId": trackingId,
+			},
 		})
 	}
-
-	if gasQuota < 1 {
-		return c.JSON(http.StatusForbidden, ErrResp{
-			Ok:      false,
-			Message: "Out of gas, refill pending. Try again later.",
-		})
-	}
-
-	trackingId := uuid.NewString()
-	taskPayload, err := json.Marshal(task.TransferPayload{
-		TrackingId:     trackingId,
-		From:           req.From,
-		To:             req.To,
-		VoucherAddress: req.VoucherAddress,
-		Amount:         req.Amount,
-	})
-	if err != nil {
-		return err
-	}
-
-	_, err = cu.TaskerClient.CreateTask(
-		c.Request().Context(),
-		tasker.SignTransferTask,
-		tasker.HighPriority,
-		&tasker.Task{
-			Id:      trackingId,
-			Payload: taskPayload,
-		},
-	)
-	if err != nil {
-		return err
-	}
-
-	err = cu.PgStore.DecrGasQuota(c.Request().Context(), req.From)
-	if err != nil {
-		return err
-	}
-
-	return c.JSON(http.StatusOK, OkResp{
-		Ok: true,
-		Result: H{
-			"trackingId": trackingId,
-		},
-	})
 }
