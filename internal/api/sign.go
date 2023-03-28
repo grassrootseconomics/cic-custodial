@@ -25,9 +25,9 @@ func HandleSignTransfer(c echo.Context) error {
 	var (
 		cu  = c.Get("cu").(*custodial.Custodial)
 		req struct {
-			From           string `json:"from" validate:"required,eth_checksum"`
-			To             string `json:"to" validate:"required,eth_checksum"`
-			VoucherAddress string `json:"voucherAddress" validate:"required,eth_checksum"`
+			From           string `json:"from" validate:"required,eth_addr_checksum"`
+			To             string `json:"to" validate:"required,eth_addr_checksum"`
+			VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr_checksum"`
 			Amount         uint64 `json:"amount" validate:"required"`
 		}
 	)

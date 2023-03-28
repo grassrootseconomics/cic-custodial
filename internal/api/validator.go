@@ -1,7 +1,6 @@
 package api
 
 import (
-	"github.com/celo-org/celo-blockchain/common"
 	"github.com/go-playground/validator/v10"
 )
 
@@ -16,13 +15,4 @@ func (v *Validator) Validate(i interface{}) error {
 		}
 	}
 	return nil
-}
-
-func EthChecksumValidator(fl validator.FieldLevel) bool {
-	addr, err := common.NewMixedcaseAddressFromString(fl.Field().String())
-	if err != nil {
-		return false
-	}
-
-	return addr.ValidChecksum()
 }

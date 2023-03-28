@@ -20,7 +20,6 @@ const (
 // Bootstrap API server.
 func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	customValidator := validator.New()
-	customValidator.RegisterValidation("eth_checksum", api.EthChecksumValidator)
 
 	server := echo.New()
 	server.HideBanner = true

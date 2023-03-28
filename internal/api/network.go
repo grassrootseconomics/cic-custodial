@@ -15,7 +15,7 @@ func HandleNetworkAccountStatus(c echo.Context) error {
 	var (
 		cu                   = c.Get("cu").(*custodial.Custodial)
 		accountStatusRequest struct {
-			Address string `param:"address" validate:"required,eth_checksum"`
+			Address string `param:"address" validate:"required,eth_addr_checksum"`
 		}
 		networkBalance big.Int
 		networkNonce   uint64
