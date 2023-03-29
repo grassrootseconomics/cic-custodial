@@ -24,7 +24,7 @@ func AccountPrepare(cu *custodial.Custodial) func(context.Context, *asynq.Task) 
 			return fmt.Errorf("account: failed %v: %w", err, asynq.SkipRetry)
 		}
 
-		if err := cu.Noncestore.SetNewAccountNonce(ctx, payload.PublicKey); err != nil {
+		if err := cu.Noncestore.SetAccountNonce(ctx, payload.PublicKey, 0); err != nil {
 			return err
 		}
 

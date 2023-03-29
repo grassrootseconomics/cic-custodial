@@ -3,27 +3,21 @@ package nonce
 import (
 	"context"
 
-	"github.com/grassrootseconomics/celoutils"
 	redispool "github.com/grassrootseconomics/cic-custodial/pkg/redis"
-	"github.com/grassrootseconomics/w3-celo-patch"
-	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 )
 
 type Opts struct {
-	RedisPool    *redispool.RedisPool
-	CeloProvider *celoutils.Provider
+	RedisPool *redispool.RedisPool
 }
 
 // RedisNoncestore implements `Noncestore`
 type RedisNoncestore struct {
-	chainProvider *celoutils.Provider
-	redis         *redispool.RedisPool
+	redis *redispool.RedisPool
 }
 
 func NewRedisNoncestore(o Opts) Noncestore {
 	return &RedisNoncestore{
-		redis:         o.RedisPool,
-		chainProvider: o.CeloProvider,
+		redis: o.RedisPool,
 	}
 }
 
@@ -70,30 +64,8 @@ func (n *RedisNoncestore) Return(ctx context.Context, publicKey string) error {
 	return nil
 }
 
-func (n *RedisNoncestore) SyncNetworkNonce(ctx context.Context, publicKey string) (uint64, error) {
-	var (
-		networkNonce uint64
-	)
-
-	err := n.chainProvider.Client.CallCtx(
-		ctx,
-		eth.Nonce(w3.A(publicKey), nil).Returns(&networkNonce),
-	)
-	if err != nil {
-		return 0, err
-	}
-
-	err = n.redis.Client.Set(ctx, publicKey, networkNonce, 0).Err()
-	if err != nil {
-		return 0, err
-	}
-
-	return networkNonce, nil
-}
-
-func (n *RedisNoncestore) SetNewAccountNonce(ctx context.Context, publicKey string) error {
-	err := n.redis.Client.Set(ctx, publicKey, 0, 0).Err()
-	if err != nil {
+func (n *RedisNoncestore) SetAccountNonce(ctx context.Context, publicKey string, nonce uint64) error {
+	if err := n.redis.Client.Set(ctx, publicKey, nonce, 0).Err(); err != nil {
 		return err
 	}
 
