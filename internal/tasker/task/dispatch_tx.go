@@ -9,7 +9,6 @@ import (
 	"github.com/celo-org/celo-blockchain/core/types"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
@@ -26,18 +25,14 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 		var (
 			payload        TxPayload
 			dispatchStatus store.DispatchStatus
-			eventPayload   pub.EventPayload
 			dispathchTx    common.Hash
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
+			return err
 		}
 
-		txHash := payload.Tx.Hash().Hex()
-
-		dispatchStatus.OtxId, eventPayload.OtxId = payload.OtxId, payload.OtxId
-		eventPayload.TxHash = txHash
+		dispatchStatus.OtxId = payload.OtxId
 
 		if err := cu.CeloProvider.Client.CallCtx(
 			ctx,
@@ -58,20 +53,12 @@ func DispatchTx(cu *custodial.Custodial) func(context.Context, *asynq.Task) erro
 				return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 			}
 
-			if err := cu.Pub.Publish(pub.DispatchFail, txHash, eventPayload); err != nil {
-				return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
-			}
-
 			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 		}
 
 		dispatchStatus.Status = enum.IN_NETWORK
 
 		if err := cu.PgStore.CreateDispatchStatus(ctx, dispatchStatus); err != nil {
-			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
-		}
-
-		if err := cu.Pub.Publish(pub.DispatchSuccess, txHash, eventPayload); err != nil {
 			return fmt.Errorf("dispatch: failed %v: %w", err, asynq.SkipRetry)
 		}
 

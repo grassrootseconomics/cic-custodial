@@ -17,7 +17,7 @@ func createSigChannel() (chan os.Signal, func()) {
 	}
 }
 
-func startGracefulShutdown(ctx context.Context, internalServices *internalServiceContainer) {
+func startGracefulShutdown(ctx context.Context, internalServices *internalServicesContainer) {
 	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 

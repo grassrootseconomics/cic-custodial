@@ -14,13 +14,11 @@ import (
 	"github.com/zerodha/logf"
 )
 
-type (
-	internalServiceContainer struct {
-		apiService    *echo.Echo
-		jetstreamSub  *sub.Sub
-		taskerService *tasker.TaskerServer
-	}
-)
+type internalServicesContainer struct {
+	apiService    *echo.Echo
+	jetstreamSub  *sub.Sub
+	taskerService *tasker.TaskerServer
+}
 
 var (
 	build string
@@ -56,27 +54,31 @@ func main() {
 
 	postgresKeystore := initPostgresKeystore(postgresPool, parsedQueries)
 	pgStore := initPostgresStore(postgresPool, parsedQueries)
-	redisNoncestore := initRedisNoncestore(redisPool, celoProvider)
+	redisNoncestore := initRedisNoncestore(redisPool)
 	lockProvider := initLockProvider(redisPool.Client)
 	taskerClient := initTaskerClient(asynqRedisPool)
-	systemContainer := initSystemContainer(context.Background(), redisNoncestore)
 
 	natsConn, jsCtx := initJetStream()
 	jsPub := initPub(jsCtx)
 
-	custodial := &custodial.Custodial{
-		CeloProvider:    celoProvider,
-		Keystore:        postgresKeystore,
-		LockProvider:    lockProvider,
-		Noncestore:      redisNoncestore,
-		PgStore:         pgStore,
-		Pub:             jsPub,
-		RedisClient:     redisPool.Client,
-		SystemContainer: systemContainer,
-		TaskerClient:    taskerClient,
+	custodial, err := custodial.NewCustodial(custodial.Opts{
+		CeloProvider:     celoProvider,
+		Keystore:         postgresKeystore,
+		LockProvider:     lockProvider,
+		Noncestore:       redisNoncestore,
+		PgStore:          pgStore,
+		Pub:              jsPub,
+		RedisClient:      redisPool.Client,
+		RegistryAddress:  ko.MustString("chain.registry_address"),
+		SystemPrivateKey: ko.MustString("system.private_key"),
+		SystemPublicKey:  ko.MustString("system.public_key"),
+		TaskerClient:     taskerClient,
+	})
+	if err != nil {
+		lo.Fatal("main: crtical error loading custodial container", "error", err)
 	}
 
-	internalServices := &internalServiceContainer{}
+	internalServices := &internalServicesContainer{}
 	wg := &sync.WaitGroup{}
 
 	signalCh, closeCh := createSigChannel()

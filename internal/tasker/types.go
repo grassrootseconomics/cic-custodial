@@ -15,14 +15,10 @@ type Task struct {
 }
 
 const (
-	AccountPrepareTask     TaskName = "sys:prepare_account"
-	AccountRegisterTask    TaskName = "sys:register_account"
-	AccountGiftGasTask     TaskName = "sys:gift_gas"
-	AccountGiftVoucherTask TaskName = "sys:gift_token"
-	AccountRefillGasTask   TaskName = "sys:refill_gas"
-	AccountActivateTask    TaskName = "sys:quorum_check"
-	SignTransferTask       TaskName = "usr:sign_transfer"
-	DispatchTxTask         TaskName = "rpc:dispatch"
+	AccountRegisterTask  TaskName = "sys:register_account"
+	AccountRefillGasTask TaskName = "sys:refill_gas"
+	SignTransferTask     TaskName = "usr:sign_transfer"
+	DispatchTxTask       TaskName = "rpc:dispatch"
 )
 
 const (

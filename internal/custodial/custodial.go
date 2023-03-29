@@ -1,12 +1,13 @@
 package custodial
 
 import (
+	"context"
 	"crypto/ecdsa"
-	"math/big"
 	"time"
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common"
+	eth_crypto "github.com/celo-org/celo-blockchain/crypto"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
@@ -14,34 +15,90 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/w3-celo-patch"
+	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
+	"github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/v9"
 )
 
 type (
-	SystemContainer struct {
-		Abis                  map[string]*w3.Func
-		AccountIndexContract  common.Address
-		GasFaucetContract     common.Address
-		GasRefillThreshold    *big.Int
-		GasRefillValue        *big.Int
-		GiftableGasValue      *big.Int
-		GiftableToken         common.Address
-		GiftableTokenValue    *big.Int
-		LockTimeout           time.Duration
-		PrivateKey            *ecdsa.PrivateKey
-		PublicKey             string
-		TokenDecimals         int
-		TokenTransferGasLimit uint64
+	Opts struct {
+		CeloProvider     *celoutils.Provider
+		Keystore         keystore.Keystore
+		LockProvider     *redislock.Client
+		Noncestore       nonce.Noncestore
+		PgStore          store.Store
+		Pub              *pub.Pub
+		RedisClient      *redis.Client
+		RegistryAddress  string
+		SystemPrivateKey string
+		SystemPublicKey  string
+		TaskerClient     *tasker.TaskerClient
 	}
+
 	Custodial struct {
-		CeloProvider    *celoutils.Provider
-		Keystore        keystore.Keystore
-		LockProvider    *redislock.Client
-		Noncestore      nonce.Noncestore
-		PgStore         store.Store
-		Pub             *pub.Pub
-		RedisClient     *redis.Client
-		SystemContainer *SystemContainer
-		TaskerClient    *tasker.TaskerClient
+		Abis             map[string]*w3.Func
+		CeloProvider     *celoutils.Provider
+		Keystore         keystore.Keystore
+		LockProvider     *redislock.Client
+		Noncestore       nonce.Noncestore
+		PgStore          store.Store
+		Pub              *pub.Pub
+		RedisClient      *redis.Client
+		RegistryMap      map[string]common.Address
+		SystemPrivateKey *ecdsa.PrivateKey
+		SystemPublicKey  string
+		TaskerClient     *tasker.TaskerClient
 	}
 )
+
+func NewCustodial(o Opts) (*Custodial, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	registryMap, err := o.CeloProvider.RegistryMap(ctx, celoutils.HexToAddress(o.RegistryAddress))
+	if err != nil {
+		log.Errorf("err: %v", err)
+		return nil, err
+	}
+
+	_, err = o.Noncestore.Peek(ctx, o.SystemPublicKey)
+	if err == redis.Nil {
+		// TODO: Bootsrap from Postgres first
+		var networkNonce uint64
+
+		err := o.CeloProvider.Client.CallCtx(
+			ctx,
+			eth.Nonce(celoutils.HexToAddress(o.SystemPublicKey), nil).Returns(&networkNonce),
+		)
+		if err != nil {
+			return nil, err
+		}
+
+		if err := o.Noncestore.SetAccountNonce(ctx, o.SystemPublicKey, networkNonce); err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	privateKey, err := eth_crypto.HexToECDSA(o.SystemPrivateKey)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Custodial{
+		Abis:             initAbis(),
+		CeloProvider:     o.CeloProvider,
+		Keystore:         o.Keystore,
+		LockProvider:     o.LockProvider,
+		Noncestore:       o.Noncestore,
+		PgStore:          o.PgStore,
+		Pub:              o.Pub,
+		RedisClient:      o.RedisClient,
+		RegistryMap:      registryMap,
+		SystemPrivateKey: privateKey,
+		SystemPublicKey:  o.SystemPublicKey,
+		TaskerClient:     o.TaskerClient,
+	}, nil
+
+}

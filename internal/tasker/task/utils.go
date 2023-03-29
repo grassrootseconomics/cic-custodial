@@ -7,8 +7,11 @@ import (
 )
 
 const (
+	gasLimit = 250000
+
 	lockPrefix     = "lock:"
 	lockRetryDelay = 25 * time.Millisecond
+	lockTimeout    = 1 * time.Second
 )
 
 // lockRetry will at most try to obtain the lock 20 times within ~0.5s.

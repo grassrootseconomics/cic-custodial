@@ -52,14 +52,36 @@ func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 			})
 		}
 
+		trackingId := uuid.NewString()
+
 		if gasQuota < 1 {
+			gasRefillPayload, err := json.Marshal(task.AccountPayload{
+				PublicKey:  req.From,
+				TrackingId: trackingId,
+			})
+			if err != nil {
+				return err
+			}
+
+			_, err = cu.TaskerClient.CreateTask(
+				c.Request().Context(),
+				tasker.AccountRefillGasTask,
+				tasker.DefaultPriority,
+				&tasker.Task{
+					Id:      trackingId,
+					Payload: gasRefillPayload,
+				},
+			)
+			if err != nil {
+				return err
+			}
+
 			return c.JSON(http.StatusForbidden, ErrResp{
 				Ok:      false,
 				Message: "Out of gas, refill pending. Try again later.",
 			})
 		}
 
-		trackingId := uuid.NewString()
 		taskPayload, err := json.Marshal(task.TransferPayload{
 			TrackingId:     trackingId,
 			From:           req.From,
@@ -80,11 +102,6 @@ func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 				Payload: taskPayload,
 			},
 		)
-		if err != nil {
-			return err
-		}
-
-		err = cu.PgStore.DecrGasQuota(c.Request().Context(), req.From)
 		if err != nil {
 			return err
 		}

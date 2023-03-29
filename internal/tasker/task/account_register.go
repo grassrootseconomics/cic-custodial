@@ -8,15 +8,18 @@ import (
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
-	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
 )
 
-func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
+type AccountPayload struct {
+	PublicKey  string `json:"publicKey"`
+	TrackingId string `json:"trackingId"`
+}
+
+func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
 			err     error
@@ -29,8 +32,8 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			lockPrefix+cu.SystemContainer.PublicKey,
-			cu.SystemContainer.LockTimeout,
+			lockPrefix+cu.SystemPublicKey,
+			lockTimeout,
 			&redislock.Options{
 				RetryStrategy: lockRetry(),
 			},
@@ -40,34 +43,33 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 		}
 		defer lock.Release(ctx)
 
-		nonce, err := cu.Noncestore.Acquire(ctx, cu.SystemContainer.PublicKey)
+		nonce, err := cu.Noncestore.Acquire(ctx, cu.SystemPublicKey)
 		if err != nil {
 			return err
 		}
 		defer func() {
 			if err != nil {
-				if nErr := cu.Noncestore.Return(ctx, cu.SystemContainer.PublicKey); nErr != nil {
+				if nErr := cu.Noncestore.Return(ctx, cu.SystemPublicKey); nErr != nil {
 					err = nErr
 				}
 			}
 		}()
 
-		input, err := cu.SystemContainer.Abis["mintTo"].EncodeArgs(
-			w3.A(payload.PublicKey),
-			cu.SystemContainer.GiftableTokenValue,
+		input, err := cu.Abis[custodial.Register].EncodeArgs(
+			celoutils.HexToAddress(payload.PublicKey),
 		)
 		if err != nil {
 			return err
 		}
 
 		builtTx, err := cu.CeloProvider.SignContractExecutionTx(
-			cu.SystemContainer.PrivateKey,
+			cu.SystemPrivateKey,
 			celoutils.ContractExecutionTxOpts{
-				ContractAddress: cu.SystemContainer.GiftableToken,
+				ContractAddress: cu.RegistryMap[celoutils.CustodialProxy],
 				InputData:       input,
 				GasFeeCap:       celoutils.SafeGasFeeCap,
 				GasTipCap:       celoutils.SafeGasTipCap,
-				GasLimit:        cu.SystemContainer.TokenTransferGasLimit,
+				GasLimit:        gasLimit,
 				Nonce:           nonce,
 			},
 		)
@@ -81,28 +83,25 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 		}
 
 		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
-			TrackingId:    payload.TrackingId,
-			Type:          enum.GIFT_VOUCHER,
-			RawTx:         hexutil.Encode(rawTx),
-			TxHash:        builtTx.Hash().Hex(),
-			From:          cu.SystemContainer.PublicKey,
-			Data:          hexutil.Encode(builtTx.Data()),
-			GasPrice:      builtTx.GasPrice().Uint64(),
-			GasLimit:      builtTx.Gas(),
-			TransferValue: cu.SystemContainer.GiftableTokenValue.Uint64(),
-			Nonce:         builtTx.Nonce(),
+			TrackingId: payload.TrackingId,
+			Type:       enum.ACCOUNT_REGISTER,
+			RawTx:      hexutil.Encode(rawTx),
+			TxHash:     builtTx.Hash().Hex(),
+			From:       cu.SystemPublicKey,
+			Data:       hexutil.Encode(builtTx.Data()),
+			GasPrice:   builtTx.GasPrice().Uint64(),
+			GasLimit:   builtTx.Gas(),
+			Nonce:      builtTx.Nonce(),
 		})
 		if err != nil {
-
 			return err
 		}
-
+		
 		disptachJobPayload, err := json.Marshal(TxPayload{
 			OtxId: id,
 			Tx:    builtTx,
 		})
 		if err != nil {
-
 			return err
 		}
 
@@ -118,17 +117,7 @@ func GiftVoucherProcessor(cu *custodial.Custodial) func(context.Context, *asynq.
 			return err
 		}
 
-		eventPayload := &pub.EventPayload{
-			OtxId:      id,
-			TrackingId: payload.TrackingId,
-			TxHash:     builtTx.Hash().Hex(),
-		}
-
-		if err := cu.Pub.Publish(
-			pub.AccountGiftVoucher,
-			builtTx.Hash().Hex(),
-			eventPayload,
-		); err != nil {
+		if err := cu.Noncestore.SetAccountNonce(ctx, payload.PublicKey, 0); err != nil {
 			return err
 		}
 

@@ -38,7 +38,7 @@ func HandleAccountCreate(cu *custodial.Custodial) func(echo.Context) error {
 
 		_, err = cu.TaskerClient.CreateTask(
 			c.Request().Context(),
-			tasker.AccountPrepareTask,
+			tasker.AccountRegisterTask,
 			tasker.DefaultPriority,
 			&tasker.Task{
 				Id:      trackingId,

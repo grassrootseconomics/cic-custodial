@@ -3,37 +3,25 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"math/big"
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
-	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/hibiken/asynq"
 )
 
-type (
-	TransferPayload struct {
-		TrackingId     string `json:"trackingId"`
-		From           string `json:"from" `
-		To             string `json:"to"`
-		VoucherAddress string `json:"voucherAddress"`
-		Amount         uint64 `json:"amount"`
-	}
-
-	transferEventPayload struct {
-		DispatchTaskId string `json:"dispatchTaskId"`
-		OTXId          uint   `json:"otxId"`
-		TrackingId     string `json:"trackingId"`
-		TxHash         string `json:"txHash"`
-	}
-)
+type TransferPayload struct {
+	TrackingId     string `json:"trackingId"`
+	From           string `json:"from" `
+	To             string `json:"to"`
+	VoucherAddress string `json:"voucherAddress"`
+	Amount         uint64 `json:"amount"`
+}
 
 func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
@@ -43,13 +31,13 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-			return fmt.Errorf("account: failed %v: %w", err, asynq.SkipRetry)
+			return err
 		}
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
 			lockPrefix+payload.From,
-			cu.SystemContainer.LockTimeout,
+			lockTimeout,
 			&redislock.Options{
 				RetryStrategy: lockRetry(),
 			},
@@ -70,26 +58,25 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 		defer func() {
 			if err != nil {
-				if nErr := cu.Noncestore.Return(ctx, cu.SystemContainer.PublicKey); nErr != nil {
+				if nErr := cu.Noncestore.Return(ctx, cu.SystemPublicKey); nErr != nil {
 					err = nErr
 				}
 			}
 		}()
 
-		input, err := cu.SystemContainer.Abis["transfer"].EncodeArgs(w3.A(payload.To), new(big.Int).SetUint64(payload.Amount))
+		input, err := cu.Abis[custodial.Transfer].EncodeArgs(celoutils.HexToAddress(payload.To), new(big.Int).SetUint64(payload.Amount))
 		if err != nil {
 			return err
 		}
 
-		// TODO: Review gas params.
 		builtTx, err := cu.CeloProvider.SignContractExecutionTx(
 			key,
 			celoutils.ContractExecutionTxOpts{
-				ContractAddress: w3.A(payload.VoucherAddress),
+				ContractAddress: celoutils.HexToAddress(payload.VoucherAddress),
 				InputData:       input,
 				GasFeeCap:       celoutils.SafeGasFeeCap,
 				GasTipCap:       celoutils.SafeGasTipCap,
-				GasLimit:        cu.SystemContainer.TokenTransferGasLimit,
+				GasLimit:        gasLimit,
 				Nonce:           nonce,
 			},
 		)
@@ -115,6 +102,10 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			Nonce:         builtTx.Nonce(),
 		})
 		if err != nil {
+			return err
+		}
+
+		if err := cu.PgStore.DecrGasQuota(ctx, payload.From); err != nil {
 			return err
 		}
 
@@ -155,20 +146,6 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			},
 		)
 		if err != nil {
-			return err
-		}
-
-		eventPayload := &transferEventPayload{
-			OTXId:      id,
-			TrackingId: payload.TrackingId,
-			TxHash:     builtTx.Hash().Hex(),
-		}
-
-		if err := cu.Pub.Publish(
-			pub.SignTransfer,
-			builtTx.Hash().Hex(),
-			eventPayload,
-		); err != nil {
 			return err
 		}
 

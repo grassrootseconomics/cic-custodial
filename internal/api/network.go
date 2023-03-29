@@ -5,6 +5,7 @@ import (
 	"math/big"
 	"net/http"
 
+	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
@@ -31,8 +32,8 @@ func HandleNetworkAccountStatus(cu *custodial.Custodial) func(echo.Context) erro
 
 		if err := cu.CeloProvider.Client.CallCtx(
 			c.Request().Context(),
-			eth.Nonce(w3.A(accountStatusRequest.Address), nil).Returns(&networkNonce),
-			eth.Balance(w3.A(accountStatusRequest.Address), nil).Returns(&networkBalance),
+			eth.Nonce(celoutils.HexToAddress(accountStatusRequest.Address), nil).Returns(&networkNonce),
+			eth.Balance(celoutils.HexToAddress(accountStatusRequest.Address), nil).Returns(&networkBalance),
 		); err != nil {
 			return err
 		}

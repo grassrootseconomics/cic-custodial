@@ -157,10 +157,9 @@ func initPostgresKeystore(postgresPool *pgxpool.Pool, queries *queries.Queries) 
 }
 
 // Load redis backed noncestore.
-func initRedisNoncestore(redisPool *redis.RedisPool, celoProvider *celoutils.Provider) nonce.Noncestore {
+func initRedisNoncestore(redisPool *redis.RedisPool) nonce.Noncestore {
 	return nonce.NewRedisNoncestore(nonce.Opts{
 		RedisPool:    redisPool,
-		CeloProvider: celoProvider,
 	})
 }
 

@@ -8,16 +8,10 @@ import (
 )
 
 const (
-	streamName         string = "CUSTODIAL"
-	streamSubjects     string = "CUSTODIAL.*"
-	AccountNewNonce    string = "CUSTODIAL.accountNewNonce"
-	AccountRegister    string = "CUSTODIAL.accountRegister"
-	AccountGiftGas     string = "CUSTODIAL.systemNewAccountGas"
-	AccountGiftVoucher string = "CUSTODIAL.systemNewAccountVoucher"
-	AccountRefillGas   string = "CUSTODIAL.systemRefillAccountGas"
-	DispatchFail       string = "CUSTODIAL.dispatchFail"
-	DispatchSuccess    string = "CUSTODIAL.dispatchSuccess"
-	SignTransfer       string = "CUSTODIAL.signTransfer"
+	streamName       string = "CUSTODIAL"
+	streamSubjects   string = "CUSTODIAL.*"
+	AccountActivated string = "CUSTODIAL.accountActivated"
+	GasRefilled      string = "CUSTODIAL.gasRefilled"
 )
 
 type (
@@ -32,9 +26,7 @@ type (
 	}
 
 	EventPayload struct {
-		OtxId      uint   `json:"otxId"`
-		TrackingId string `json:"trackingId"`
-		TxHash     string `json:"txHash"`
+		TxHash string `json:"txHash"`
 	}
 )
 

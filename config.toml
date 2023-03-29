@@ -8,27 +8,11 @@ metrics = true
 rpc_endpoint = ""
 testnet = true
 devnet = false
+registry_address = ""
 
 [system]
-# System default values
-
-# Gas values are in wei with 18 d.p. precision unless otherwise stated
-# Token values are in wei with 6 d.p. precision unless otherwise stated
-
-# All addresses MUST be checksumed
-account_index_address = ""
-gas_faucet_address = ""
-gas_refill_threshold = 2500000000000000
-gas_refill_value = 15000000000000000
-giftable_gas_value = 15000000000000000
-giftable_token_address = ""
-giftable_token_value = 5000000
-# System private key
-# Should always be toped up
 private_key = ""
 public_key = ""
-token_decimals = 6
-token_transfer_gas_limit = 200000
 
 [postgres]
 dsn = ""

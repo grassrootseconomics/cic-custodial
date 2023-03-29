@@ -3,26 +3,22 @@ package task
 import (
 	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
-	"github.com/grassrootseconomics/w3-celo-patch"
+	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/hibiken/asynq"
-	"github.com/redis/go-redis/v9"
 )
 
 const (
-	gasLockPrefix = "gas_lock:"
-	gasLockExpiry = 1 * time.Hour
+	gasGiveToLimit = 250000
 )
 
 func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
@@ -30,32 +26,75 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 		var (
 			err     error
 			payload AccountPayload
+
+			nextTime    big.Int
+			checkStatus bool
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-			return fmt.Errorf("account: failed %v: %w", err, asynq.SkipRetry)
+			return err
 		}
 
-		// TODO: Check eth-faucet whether we can request for a topup before signing the tx.
 		_, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(ctx, payload.PublicKey)
 		if err != nil {
 			return err
 		}
 
-		gasLock, err := cu.RedisClient.Get(ctx, gasLockPrefix+payload.PublicKey).Bool()
-		if !errors.Is(err, redis.Nil) {
-			return err
-		}
-
-		if gasQuota > 0 || gasLock {
+		// The user has enough gas for atleast 5 more transactions.
+		if gasQuota > 5 {
 			return nil
 		}
 
-		// TODO: Use eth-faucet.
+		if err := cu.CeloProvider.Client.CallCtx(
+			ctx,
+			eth.CallFunc(
+				cu.Abis[custodial.NextTime],
+				cu.RegistryMap[celoutils.GasFaucet],
+				celoutils.HexToAddress(payload.PublicKey),
+			).Returns(&nextTime),
+		); err != nil {
+			return err
+		}
+
+		// The user already requested funds, there is a cooldown applied.
+		// We can schedule an attempt after the cooldown period has passed.
+		if nextTime.Int64() > time.Now().Unix() {
+			_, err = cu.TaskerClient.CreateTask(
+				ctx,
+				tasker.AccountRefillGasTask,
+				tasker.DefaultPriority,
+				&tasker.Task{
+					Payload: t.Payload(),
+				},
+				asynq.ProcessAt(time.Unix(nextTime.Int64(), 0)),
+			)
+			if err != nil {
+				return err
+			}
+
+			return nil
+		}
+
+		if err := cu.CeloProvider.Client.CallCtx(
+			ctx,
+			eth.CallFunc(
+				cu.Abis[custodial.Check],
+				cu.RegistryMap[celoutils.GasFaucet],
+				celoutils.HexToAddress(payload.PublicKey),
+			).Returns(&checkStatus),
+		); err != nil {
+			return err
+		}
+
+		// The gas faucet backend returns a false status, a poke will fail.
+		if !checkStatus {
+			return nil
+		}
+
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			lockPrefix+cu.SystemContainer.PublicKey,
-			cu.SystemContainer.LockTimeout,
+			lockPrefix+cu.SystemPublicKey,
+			lockTimeout,
 			&redislock.Options{
 				RetryStrategy: lockRetry(),
 			},
@@ -65,27 +104,33 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 		}
 		defer lock.Release(ctx)
 
-		nonce, err := cu.Noncestore.Acquire(ctx, cu.SystemContainer.PublicKey)
+		nonce, err := cu.Noncestore.Acquire(ctx, cu.SystemPublicKey)
 		if err != nil {
 			return err
 		}
 		defer func() {
 			if err != nil {
-				if nErr := cu.Noncestore.Return(ctx, cu.SystemContainer.PublicKey); nErr != nil {
+				if nErr := cu.Noncestore.Return(ctx, cu.SystemPublicKey); nErr != nil {
 					err = nErr
 				}
 			}
 		}()
 
-		// TODO: Review gas params
-		builtTx, err := cu.CeloProvider.SignGasTransferTx(
-			cu.SystemContainer.PrivateKey,
-			celoutils.GasTransferTxOpts{
-				To:        w3.A(payload.PublicKey),
-				Nonce:     nonce,
-				Value:     cu.SystemContainer.GiftableGasValue,
-				GasFeeCap: celoutils.SafeGasFeeCap,
-				GasTipCap: celoutils.SafeGasTipCap,
+		input, err := cu.Abis[custodial.GiveTo].EncodeArgs(
+			celoutils.HexToAddress(payload.PublicKey),
+		)
+		if err != nil {
+			return err
+		}
+
+		builtTx, err := cu.CeloProvider.SignContractExecutionTx(
+			cu.SystemPrivateKey,
+			celoutils.ContractExecutionTxOpts{
+				ContractAddress: cu.RegistryMap[celoutils.GasFaucet],
+				InputData:       input,
+				GasFeeCap:       celoutils.SafeGasFeeCap,
+				GasTipCap:       celoutils.SafeGasTipCap,
+				Nonce:           nonce,
 			},
 		)
 		if err != nil {
@@ -98,16 +143,15 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 		}
 
 		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
-			TrackingId:    payload.TrackingId,
-			Type:          enum.REFILL_GAS,
-			RawTx:         hexutil.Encode(rawTx),
-			TxHash:        builtTx.Hash().Hex(),
-			From:          cu.SystemContainer.PublicKey,
-			Data:          hexutil.Encode(builtTx.Data()),
-			GasPrice:      builtTx.GasPrice().Uint64(),
-			GasLimit:      builtTx.Gas(),
-			TransferValue: cu.SystemContainer.GiftableGasValue.Uint64(),
-			Nonce:         builtTx.Nonce(),
+			TrackingId: payload.TrackingId,
+			Type:       enum.REFILL_GAS,
+			RawTx:      hexutil.Encode(rawTx),
+			TxHash:     builtTx.Hash().Hex(),
+			From:       cu.SystemPublicKey,
+			Data:       hexutil.Encode(builtTx.Data()),
+			GasPrice:   builtTx.GasPrice().Uint64(),
+			GasLimit:   builtTx.Gas(),
+			Nonce:      builtTx.Nonce(),
 		})
 		if err != nil {
 			return err
@@ -130,24 +174,6 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			},
 		)
 		if err != nil {
-			return err
-		}
-
-		eventPayload := &pub.EventPayload{
-			OtxId:      id,
-			TrackingId: payload.TrackingId,
-			TxHash:     builtTx.Hash().Hex(),
-		}
-
-		if err := cu.Pub.Publish(
-			pub.AccountRefillGas,
-			builtTx.Hash().Hex(),
-			eventPayload,
-		); err != nil {
-			return err
-		}
-
-		if _, err := cu.RedisClient.SetEx(ctx, gasLockPrefix+payload.PublicKey, true, gasLockExpiry).Result(); err != nil {
 			return err
 		}
 

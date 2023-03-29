@@ -6,14 +6,16 @@ import (
 	redispool "github.com/grassrootseconomics/cic-custodial/pkg/redis"
 )
 
-type Opts struct {
-	RedisPool *redispool.RedisPool
-}
+type (
+	Opts struct {
+		RedisPool *redispool.RedisPool
+	}
 
-// RedisNoncestore implements `Noncestore`
-type RedisNoncestore struct {
-	redis *redispool.RedisPool
-}
+	// RedisNoncestore implements `Noncestore`
+	RedisNoncestore struct {
+		redis *redispool.RedisPool
+	}
+)
 
 func NewRedisNoncestore(o Opts) Noncestore {
 	return &RedisNoncestore{
