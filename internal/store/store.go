@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"math/big"
 
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 )
@@ -26,7 +27,7 @@ type (
 		Data          string
 		GasLimit      uint64
 		TransferValue uint64
-		GasPrice      uint64
+		GasPrice      *big.Int
 		Nonce         uint64
 	}
 

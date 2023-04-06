@@ -89,7 +89,7 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 			TxHash:     builtTx.Hash().Hex(),
 			From:       cu.SystemPublicKey,
 			Data:       hexutil.Encode(builtTx.Data()),
-			GasPrice:   builtTx.GasPrice().Uint64(),
+			GasPrice:   builtTx.GasPrice(),
 			GasLimit:   builtTx.Gas(),
 			Nonce:      builtTx.Nonce(),
 		})

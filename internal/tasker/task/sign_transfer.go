@@ -96,7 +96,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			TxHash:        builtTx.Hash().Hex(),
 			From:          payload.From,
 			Data:          hexutil.Encode(builtTx.Data()),
-			GasPrice:      builtTx.GasPrice().Uint64(),
+			GasPrice:      builtTx.GasPrice(),
 			GasLimit:      builtTx.Gas(),
 			TransferValue: payload.Amount,
 			Nonce:         builtTx.Nonce(),
