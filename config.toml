@@ -5,14 +5,13 @@ address = ":5000"
 metrics = true
 
 [chain]
-rpc_endpoint = ""
-testnet = true
-devnet = false
+rpc_endpoint     = ""
+testnet          = true
 registry_address = ""
 
 [system]
 private_key = ""
-public_key = ""
+public_key  = ""
 
 [postgres]
 dsn = ""
@@ -20,17 +19,15 @@ dsn = ""
 [redis]
 # Used for locks and the Noncestore
 # Ideally use DB 1
-dsn = ""
+dsn           = ""
 min_idle_conn = 5
 
 [asynq]
 # Exclusively used by the asynq tasker
 # Ideally use DB 0
-dsn = ""
+dsn                = ""
 task_retention_hrs = 24
-worker_count = 15
+worker_count       = 15
 
 [jetstream]
-endpoint               = ""
-persist_duration_hrs = 48
-dedup_duration_hrs   = 6
+endpoint = ""
