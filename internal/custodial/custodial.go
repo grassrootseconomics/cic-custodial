@@ -11,7 +11,6 @@ import (
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/w3-celo-patch"
@@ -27,7 +26,6 @@ type (
 		LockProvider     *redislock.Client
 		Noncestore       nonce.Noncestore
 		PgStore          store.Store
-		Pub              *pub.Pub
 		RedisClient      *redis.Client
 		RegistryAddress  string
 		SystemPrivateKey string
@@ -42,7 +40,6 @@ type (
 		LockProvider     *redislock.Client
 		Noncestore       nonce.Noncestore
 		PgStore          store.Store
-		Pub              *pub.Pub
 		RedisClient      *redis.Client
 		RegistryMap      map[string]common.Address
 		SystemPrivateKey *ecdsa.PrivateKey
@@ -93,7 +90,6 @@ func NewCustodial(o Opts) (*Custodial, error) {
 		LockProvider:     o.LockProvider,
 		Noncestore:       o.Noncestore,
 		PgStore:          o.PgStore,
-		Pub:              o.Pub,
 		RedisClient:      o.RedisClient,
 		RegistryMap:      registryMap,
 		SystemPrivateKey: privateKey,

@@ -3,14 +3,12 @@ package main
 import (
 	"context"
 	"strings"
-	"time"
 
 	"github.com/bsm/redislock"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/queries"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/sub"
@@ -159,7 +157,7 @@ func initPostgresKeystore(postgresPool *pgxpool.Pool, queries *queries.Queries) 
 // Load redis backed noncestore.
 func initRedisNoncestore(redisPool *redis.RedisPool) nonce.Noncestore {
 	return nonce.NewRedisNoncestore(nonce.Opts{
-		RedisPool:    redisPool,
+		RedisPool: redisPool,
 	})
 }
 
@@ -197,19 +195,6 @@ func initJetStream() (*nats.Conn, nats.JetStreamContext) {
 	}
 
 	return natsConn, js
-}
-
-func initPub(jsCtx nats.JetStreamContext) *pub.Pub {
-	pub, err := pub.NewPub(pub.PubOpts{
-		DedupDuration:   time.Duration(ko.MustInt("jetstream.dedup_duration_hrs")) * time.Hour,
-		JsCtx:           jsCtx,
-		PersistDuration: time.Duration(ko.MustInt("jetstream.persist_duration_hrs")) * time.Hour,
-	})
-	if err != nil {
-		lo.Fatal("init: critical error bootstrapping pub", "error", err)
-	}
-
-	return pub
 }
 
 func initSub(natsConn *nats.Conn, jsCtx nats.JetStreamContext, cu *custodial.Custodial) *sub.Sub {

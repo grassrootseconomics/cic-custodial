@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/grassrootseconomics/cic-custodial/internal/pub"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/nats-io/nats.go"
 )
@@ -28,34 +27,10 @@ func (s *Sub) handler(ctx context.Context, msg *nats.Msg) error {
 			if err := s.cu.PgStore.ActivateAccount(ctx, chainEvent.To); err != nil {
 				return err
 			}
-
-			eventPayload := &pub.EventPayload{
-				TxHash: chainEvent.TxHash,
-			}
-
-			if err := s.cu.Pub.Publish(
-				pub.AccountActivated,
-				chainEvent.TxHash,
-				eventPayload,
-			); err != nil {
-				return err
-			}
 		}
 	case "CHAIN.gas":
 		if chainEvent.Success {
 			if err := s.cu.PgStore.ResetGasQuota(ctx, chainEvent.To); err != nil {
-				return err
-			}
-
-			eventPayload := &pub.EventPayload{
-				TxHash: chainEvent.TxHash,
-			}
-
-			if err := s.cu.Pub.Publish(
-				pub.GasRefilled,
-				chainEvent.TxHash,
-				eventPayload,
-			); err != nil {
 				return err
 			}
 		}

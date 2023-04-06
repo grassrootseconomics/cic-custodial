@@ -59,7 +59,6 @@ func main() {
 	taskerClient := initTaskerClient(asynqRedisPool)
 
 	natsConn, jsCtx := initJetStream()
-	jsPub := initPub(jsCtx)
 
 	custodial, err := custodial.NewCustodial(custodial.Opts{
 		CeloProvider:     celoProvider,
@@ -67,7 +66,6 @@ func main() {
 		LockProvider:     lockProvider,
 		Noncestore:       redisNoncestore,
 		PgStore:          pgStore,
-		Pub:              jsPub,
 		RedisClient:      redisPool.Client,
 		RegistryAddress:  ko.MustString("chain.registry_address"),
 		SystemPrivateKey: ko.MustString("system.private_key"),
