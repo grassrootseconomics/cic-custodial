@@ -3,19 +3,17 @@ package sub
 import (
 	"context"
 	"errors"
-	"time"
 
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
+	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/nats-io/nats.go"
 	"github.com/zerodha/logf"
 )
 
 const (
-	durableId     = "cic-custodial"
-	pullStream    = "CHAIN"
-	pullSubject   = "CHAIN.*"
-	actionTimeout = 5 * time.Second
-	waitDelay     = 1 * time.Second
+	durableId   = "cic-custodial"
+	pullStream  = "CHAIN"
+	pullSubject = "CHAIN.*"
 )
 
 type (
@@ -67,7 +65,6 @@ func (s *Sub) Process() error {
 		events, err := natsSub.Fetch(1)
 		if err != nil {
 			if errors.Is(err, nats.ErrTimeout) {
-				s.logg.Debug("sub: no msg to pull")
 				continue
 			} else if errors.Is(err, nats.ErrConnectionClosed) {
 				return nil
@@ -78,15 +75,14 @@ func (s *Sub) Process() error {
 
 		if len(events) > 0 {
 			msg := events[0]
-			ctx, cancel := context.WithTimeout(context.Background(), actionTimeout)
+			ctx, cancel := context.WithTimeout(context.Background(), util.SLATimeout)
 
-			if err := s.handler(ctx, msg); err != nil {
+			if err := s.processEventHandler(ctx, msg); err != nil {
 				s.logg.Error("sub: handler error", "error", err)
 				msg.Nak()
+			} else {
+				msg.Ack()
 			}
-
-			s.logg.Debug("sub: processed msg", "subject", msg.Subject)
-			msg.Ack()
 			cancel()
 		}
 	}

@@ -4,33 +4,52 @@ import (
 	"context"
 	"encoding/json"
 
-	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/nats-io/nats.go"
 )
 
-func (s *Sub) handler(ctx context.Context, msg *nats.Msg) error {
+type (
+	ChainEvent struct {
+		Block           uint64 `json:"block"`
+		From            string `json:"from"`
+		To              string `json:"to"`
+		ContractAddress string `json:"contractAddress"`
+		Success         bool   `json:"success"`
+		TxHash          string `json:"transactionHash"`
+		TxIndex         uint   `json:"transactionIndex"`
+		Value           uint64 `json:"value"`
+	}
+)
+
+func (s *Sub) processEventHandler(ctx context.Context, msg *nats.Msg) error {
 	var (
-		chainEvent store.MinimalTxInfo
+		chainEvent ChainEvent
 	)
 
 	if err := json.Unmarshal(msg.Data, &chainEvent); err != nil {
 		return err
 	}
 
-	if err := s.cu.PgStore.UpdateOtxStatusFromChainEvent(ctx, chainEvent); err != nil {
+	if err := s.cu.Store.UpdateDispatchStatus(
+		ctx,
+		chainEvent.Success,
+		chainEvent.TxHash,
+		chainEvent.Block,
+	); err != nil {
 		return err
 	}
 
-	switch msg.Subject {
-	case "CHAIN.register":
-		if chainEvent.Success {
-			if err := s.cu.PgStore.ActivateAccount(ctx, chainEvent.To); err != nil {
+	if chainEvent.Success {
+		switch msg.Subject {
+		case "CHAIN.register":
+			if err := s.cu.Store.ActivateAccount(ctx, chainEvent.To); err != nil {
 				return err
 			}
-		}
-	case "CHAIN.gas":
-		if chainEvent.Success {
-			if err := s.cu.PgStore.ResetGasQuota(ctx, chainEvent.To); err != nil {
+
+			if err := s.cu.Store.ResetGasQuota(ctx, chainEvent.To); err != nil {
+				return err
+			}
+		case "CHAIN.gas":
+			if err := s.cu.Store.ResetGasQuota(ctx, chainEvent.To); err != nil {
 				return err
 			}
 		}
