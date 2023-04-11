@@ -82,7 +82,7 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 			return err
 		}
 
-		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
+		id, err := cu.Store.CreateOtx(ctx, store.Otx{
 			TrackingId: payload.TrackingId,
 			Type:       enum.ACCOUNT_REGISTER,
 			RawTx:      hexutil.Encode(rawTx),
@@ -96,7 +96,7 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 		if err != nil {
 			return err
 		}
-		
+
 		disptachJobPayload, err := json.Marshal(TxPayload{
 			OtxId: id,
 			Tx:    builtTx,

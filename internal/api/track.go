@@ -28,7 +28,7 @@ func HandleTrackTx(cu *custodial.Custodial) func(echo.Context) error {
 			return err
 		}
 
-		txs, err := cu.PgStore.GetTxStatusByTrackingId(c.Request().Context(), txStatusRequest.TrackingId)
+		txs, err := cu.Store.GetTxStatus(c.Request().Context(), txStatusRequest.TrackingId)
 		if err != nil {
 			return err
 		}
@@ -36,7 +36,7 @@ func HandleTrackTx(cu *custodial.Custodial) func(echo.Context) error {
 		return c.JSON(http.StatusOK, OkResp{
 			Ok: true,
 			Result: H{
-				"transactions": txs,
+				"transaction": txs,
 			},
 		})
 	}

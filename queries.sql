@@ -9,11 +9,6 @@ INSERT INTO keystore(public_key, private_key) VALUES($1, $2) RETURNING id
 -- $1: public_key
 SELECT private_key FROM keystore WHERE public_key=$1
 
---name: activate-account
--- Activate an account following successful quorum
--- $1: public_key
-UPDATE keystore SET active = true WHERE public_key=$1
-
 --name: create-otx
 -- Create a new locally originating tx
 -- $1: tracking_id
@@ -39,6 +34,13 @@ INSERT INTO otx_sign(
     nonce
 ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
 
+--name: get-tx-status-by-tracking-id
+-- Gets tx status's from possible multiple txs with the same tracking_id
+-- $1: tracking_id
+SELECT otx_sign.type, otx_sign.tx_hash, otx_sign.transfer_value, otx_sign.created_at, otx_dispatch.status FROM otx_sign
+INNER JOIN otx_dispatch ON otx_sign.id = otx_dispatch.otx_id
+WHERE otx_sign.tracking_id=$1
+
 --name: create-dispatch-status
 -- Create a new dispatch status
 -- $1: otx_id
@@ -48,7 +50,7 @@ INSERT INTO otx_dispatch(
     "status"
 ) VALUES($1, $2) RETURNING id
 
---name: update-chain-status
+--name: update-dispatch-status
 -- Updates the status of the dispatched tx with the chain mine status
 -- $1: tx_hash
 -- $2: status
@@ -60,22 +62,10 @@ UPDATE otx_dispatch SET "status" = $2, "block" = $3 WHERE otx_dispatch.id = (
     AND otx_dispatch.status = 'IN_NETWORK'
 )
 
---name: get-tx-status-by-tracking-id
--- Gets tx status's from possible multiple txs with the same tracking_id
--- $1: tracking_id
-SELECT otx_sign.type, otx_sign.tx_hash, otx_sign.transfer_value, otx_sign.created_at, otx_dispatch.status FROM otx_sign
-INNER JOIN otx_dispatch ON otx_sign.id = otx_dispatch.otx_id
-WHERE otx_sign.tracking_id=$1
-
--- TODO: Scroll by status type with cursor pagination
-
---name: get-account-activation-quorum
--- Gets quorum of required and confirmed system transactions for the account
--- $1: tracking_id
-SELECT count(*) FROM otx_dispatch INNER JOIN
-otx_sign ON otx_dispatch.otx_id = otx_sign.id
-WHERE otx_sign.tracking_id=$1
-AND otx_dispatch.status = 'SUCCESS'
+--name: activate-account
+-- Activate an account following successful quorum
+-- $1: public_key
+UPDATE keystore SET active = true WHERE public_key=$1
 
 --name: get-account-status-by-address
 -- Gets current gas quota for an individual account by address

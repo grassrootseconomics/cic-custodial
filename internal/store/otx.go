@@ -2,21 +2,39 @@ package store
 
 import (
 	"context"
+	"math/big"
 	"time"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
 )
 
-type TxStatus struct {
-	Type          string    `db:"type" json:"txType"`
-	TxHash        string    `db:"tx_hash" json:"txHash"`
-	TransferValue uint64    `db:"transfer_value" json:"transferValue"`
-	CreatedAt     time.Time `db:"created_at" json:"createdAt"`
-	Status        string    `db:"status" json:"status"`
-}
+type (
+	Otx struct {
+		TrackingId    string
+		Type          enum.OtxType
+		RawTx         string
+		TxHash        string
+		From          string
+		Data          string
+		GasLimit      uint64
+		TransferValue uint64
+		GasPrice      *big.Int
+		Nonce         uint64
+	}
+	txStatus struct {
+		CreatedAt     time.Time `db:"created_at" json:"createdAt"`
+		Status        string    `db:"status" json:"status"`
+		TransferValue uint64    `db:"transfer_value" json:"transferValue"`
+		TxHash        string    `db:"tx_hash" json:"txHash"`
+		Type          string    `db:"type" json:"txType"`
+	}
+)
 
-func (s *PostgresStore) CreateOtx(ctx context.Context, otx OTX) (uint, error) {
+func (s *PgStore) CreateOtx(
+	ctx context.Context,
+	otx Otx,
+) (uint, error) {
 	var (
 		id uint
 	)
@@ -34,37 +52,52 @@ func (s *PostgresStore) CreateOtx(ctx context.Context, otx OTX) (uint, error) {
 		otx.GasLimit,
 		otx.TransferValue,
 		otx.Nonce,
-	).Scan(&id); err != nil {
+	).Scan(
+		&id,
+	); err != nil {
 		return id, err
 	}
 
 	return id, nil
 }
 
-func (s *PostgresStore) GetTxStatusByTrackingId(ctx context.Context, trackingId string) ([]*TxStatus, error) {
+func (s *PgStore) GetTxStatus(
+	ctx context.Context,
+	trackingId string,
+) (txStatus, error) {
 	var (
-		txs []*TxStatus
+		tx txStatus
 	)
 
-	if err := pgxscan.Select(
+	rows, err := s.db.Query(
 		ctx,
-		s.db,
-		&txs,
 		s.queries.GetTxStatusByTrackingId,
 		trackingId,
-	); err != nil {
-		return nil, err
+	)
+	if err != nil {
+		return tx, err
 	}
 
-	return txs, nil
+	if err := pgxscan.ScanOne(
+		&tx,
+		rows,
+	); err != nil {
+		return tx, err
+	}
+
+	return tx, nil
 }
 
-func (s *PostgresStore) CreateDispatchStatus(ctx context.Context, dispatch DispatchStatus) error {
+func (s *PgStore) CreateDispatchStatus(
+	ctx context.Context,
+	otxId uint,
+	otxStatus enum.OtxStatus,
+) error {
 	if _, err := s.db.Exec(
 		ctx,
 		s.queries.CreateDispatchStatus,
-		dispatch.OtxId,
-		dispatch.Status,
+		otxId,
+		otxStatus,
 	); err != nil {
 		return err
 	}
@@ -72,21 +105,26 @@ func (s *PostgresStore) CreateDispatchStatus(ctx context.Context, dispatch Dispa
 	return nil
 }
 
-func (s *PostgresStore) UpdateOtxStatusFromChainEvent(ctx context.Context, chainEvent MinimalTxInfo) error {
+func (s *PgStore) UpdateDispatchStatus(
+	ctx context.Context,
+	txSuccess bool,
+	txHash string,
+	txBlock uint64,
+) error {
 	var (
 		status = enum.SUCCESS
 	)
 
-	if !chainEvent.Success {
+	if !txSuccess {
 		status = enum.REVERTED
 	}
 
 	if _, err := s.db.Exec(
 		ctx,
-		s.queries.UpdateChainStatus,
-		chainEvent.TxHash,
+		s.queries.UpdateDispatchStatus,
+		txHash,
 		status,
-		chainEvent.Block,
+		txBlock,
 	); err != nil {
 		return err
 	}

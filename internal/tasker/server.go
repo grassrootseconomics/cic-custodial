@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	retryRequeueInterval = 2 * time.Second
+	retryRequeueInterval = 1 * time.Second
 )
 
 type TaskerServerOpts struct {

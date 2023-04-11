@@ -2,18 +2,17 @@ package main
 
 import (
 	"net/http"
-	"time"
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-playground/validator/v10"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
+	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 )
 
 const (
-	contextTimeout      = 5 * time.Second
 	systemGlobalLockKey = "system:global_lock"
 )
 
@@ -31,7 +30,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 
 	server.Use(middleware.Recover())
 	server.Use(middleware.BodyLimit("1M"))
-	server.Use(middleware.ContextTimeout(contextTimeout))
+	server.Use(middleware.ContextTimeout(util.SLATimeout))
 
 	if ko.Bool("service.metrics") {
 		server.GET("/metrics", func(c echo.Context) error {

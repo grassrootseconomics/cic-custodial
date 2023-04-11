@@ -46,14 +46,11 @@ func init() {
 func main() {
 	lo.Info("main: starting cic-custodial", "build", build)
 
-	parsedQueries := initQueries()
 	celoProvider := initCeloProvider()
-	postgresPool := initPostgresPool()
 	asynqRedisPool := initAsynqRedisPool()
 	redisPool := initCommonRedisPool()
 
-	postgresKeystore := initPostgresKeystore(postgresPool, parsedQueries)
-	pgStore := initPostgresStore(postgresPool, parsedQueries)
+	store := initPgStore()
 	redisNoncestore := initRedisNoncestore(redisPool)
 	lockProvider := initLockProvider(redisPool.Client)
 	taskerClient := initTaskerClient(asynqRedisPool)
@@ -62,10 +59,9 @@ func main() {
 
 	custodial, err := custodial.NewCustodial(custodial.Opts{
 		CeloProvider:     celoProvider,
-		Keystore:         postgresKeystore,
 		LockProvider:     lockProvider,
 		Noncestore:       redisNoncestore,
-		PgStore:          pgStore,
+		Store:            store,
 		RedisClient:      redisPool.Client,
 		RegistryAddress:  ko.MustString("chain.registry_address"),
 		SystemPrivateKey: ko.MustString("system.private_key"),

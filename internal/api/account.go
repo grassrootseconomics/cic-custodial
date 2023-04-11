@@ -22,7 +22,7 @@ func HandleAccountCreate(cu *custodial.Custodial) func(echo.Context) error {
 			return err
 		}
 
-		id, err := cu.Keystore.WriteKeyPair(c.Request().Context(), generatedKeyPair)
+		id, err := cu.Store.WriteKeyPair(c.Request().Context(), generatedKeyPair)
 		if err != nil {
 			return err
 		}

@@ -3,16 +3,15 @@ package custodial
 import (
 	"context"
 	"crypto/ecdsa"
-	"time"
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common"
 	eth_crypto "github.com/celo-org/celo-blockchain/crypto"
 	"github.com/grassrootseconomics/celoutils"
-	"github.com/grassrootseconomics/cic-custodial/internal/keystore"
 	"github.com/grassrootseconomics/cic-custodial/internal/nonce"
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
+	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/labstack/gommon/log"
@@ -22,10 +21,9 @@ import (
 type (
 	Opts struct {
 		CeloProvider     *celoutils.Provider
-		Keystore         keystore.Keystore
 		LockProvider     *redislock.Client
 		Noncestore       nonce.Noncestore
-		PgStore          store.Store
+		Store            store.Store
 		RedisClient      *redis.Client
 		RegistryAddress  string
 		SystemPrivateKey string
@@ -36,10 +34,9 @@ type (
 	Custodial struct {
 		Abis             map[string]*w3.Func
 		CeloProvider     *celoutils.Provider
-		Keystore         keystore.Keystore
 		LockProvider     *redislock.Client
 		Noncestore       nonce.Noncestore
-		PgStore          store.Store
+		Store            store.Store
 		RedisClient      *redis.Client
 		RegistryMap      map[string]common.Address
 		SystemPrivateKey *ecdsa.PrivateKey
@@ -49,7 +46,7 @@ type (
 )
 
 func NewCustodial(o Opts) (*Custodial, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), util.SLATimeout)
 	defer cancel()
 
 	registryMap, err := o.CeloProvider.RegistryMap(ctx, celoutils.HexToAddress(o.RegistryAddress))
@@ -86,10 +83,9 @@ func NewCustodial(o Opts) (*Custodial, error) {
 	return &Custodial{
 		Abis:             initAbis(),
 		CeloProvider:     o.CeloProvider,
-		Keystore:         o.Keystore,
 		LockProvider:     o.LockProvider,
 		Noncestore:       o.Noncestore,
-		PgStore:          o.PgStore,
+		Store:            o.Store,
 		RedisClient:      o.RedisClient,
 		RegistryMap:      registryMap,
 		SystemPrivateKey: privateKey,

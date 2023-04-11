@@ -40,7 +40,7 @@ func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 			return err
 		}
 
-		accountActive, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(c.Request().Context(), req.From)
+		accountActive, gasQuota, err := cu.Store.GetAccountStatus(c.Request().Context(), req.From)
 		if err != nil {
 			return err
 		}

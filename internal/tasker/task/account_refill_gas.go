@@ -35,7 +35,7 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			return err
 		}
 
-		_, gasQuota, err := cu.PgStore.GetAccountStatusByAddress(ctx, payload.PublicKey)
+		_, gasQuota, err := cu.Store.GetAccountStatus(ctx, payload.PublicKey)
 		if err != nil {
 			return err
 		}
@@ -142,7 +142,7 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			return err
 		}
 
-		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
+		id, err := cu.Store.CreateOtx(ctx, store.Otx{
 			TrackingId: payload.TrackingId,
 			Type:       enum.REFILL_GAS,
 			RawTx:      hexutil.Encode(rawTx),

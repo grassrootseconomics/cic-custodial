@@ -47,7 +47,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 		defer lock.Release(ctx)
 
-		key, err := cu.Keystore.LoadPrivateKey(ctx, payload.From)
+		key, err := cu.Store.LoadPrivateKey(ctx, payload.From)
 		if err != nil {
 			return err
 		}
@@ -89,7 +89,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			return err
 		}
 
-		id, err := cu.PgStore.CreateOtx(ctx, store.OTX{
+		id, err := cu.Store.CreateOtx(ctx, store.Otx{
 			TrackingId:    payload.TrackingId,
 			Type:          enum.TRANSFER_VOUCHER,
 			RawTx:         hexutil.Encode(rawTx),
@@ -105,7 +105,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			return err
 		}
 
-		if err := cu.PgStore.DecrGasQuota(ctx, payload.From); err != nil {
+		if err := cu.Store.DecrGasQuota(ctx, payload.From); err != nil {
 			return err
 		}
 
