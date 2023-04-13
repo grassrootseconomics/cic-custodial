@@ -1,0 +1,42 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "Interact with CIC Custodial API",
+        "title": "CIC Custodial API",
+        "termsOfService": "https://grassecon.org/pages/terms-and-conditions.html",
+        "contact": {
+            "name": "API Support",
+            "url": "https://grassecon.org/pages/contact-us",
+            "email": "devops@grassecon.org"
+        },
+        "license": {
+            "name": "AGPL-3.0",
+            "url": "https://www.gnu.org/licenses/agpl-3.0.en.html"
+        },
+        "version": "1.0"
+    },
+    "basePath": "/api",
+    "paths": {
+        "/": {
+            "post": {
+                "description": "Create a new custodial account.",
+                "consumes": [
+                    "*/*"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "summary": "Create a new custodial account.",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

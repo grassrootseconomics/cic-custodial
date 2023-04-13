@@ -2,8 +2,8 @@ package redis
 
 import (
 	"context"
-	"time"
 
+	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -34,7 +34,7 @@ func NewRedisPool(ctx context.Context, o RedisPoolOpts) (*RedisPool, error) {
 
 	redisClient := redis.NewClient(redisOpts)
 
-	ctx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, util.SLATimeout)
 	defer cancel()
 
 	if err := redisClient.SetNX(ctx, systemGlobalLockKey, false, 0).Err(); err != nil {

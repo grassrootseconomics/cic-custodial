@@ -12,9 +12,13 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// CreateAccountHandler route.
-// POST: /api/account/create
-// Returns the public key.
+// HandleAccountCreate godoc
+// @Summary Create a new custodial account.
+// @Description Create a new custodial account.
+// @Accept */*
+// @Produce json
+// @Success 200 {object} map[string]interface{}
+// @Router / [post]
 func HandleAccountCreate(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		generatedKeyPair, err := keypair.Generate()

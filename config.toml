@@ -3,6 +3,7 @@ address = ":5000"
 # Exposes Go process Prometheus metrics
 # /metrics endpoint
 metrics = true
+docs    = true
 
 [chain]
 rpc_endpoint     = ""

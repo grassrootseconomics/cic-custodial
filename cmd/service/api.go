@@ -5,11 +5,13 @@ import (
 
 	"github.com/VictoriaMetrics/metrics"
 	"github.com/go-playground/validator/v10"
+	_ "github.com/grassrootseconomics/cic-custodial/docs"
 	"github.com/grassrootseconomics/cic-custodial/internal/api"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
 	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	echoSwagger "github.com/swaggo/echo-swagger"
 )
 
 const (
@@ -37,6 +39,10 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 			metrics.WritePrometheus(c.Response(), true)
 			return nil
 		})
+	}
+
+	if ko.Bool("service.docs") {
+		server.GET("/docs/*", echoSwagger.WrapHandler)
 	}
 
 	apiRoute := server.Group("/api", systemGlobalLock(custodialContainer))

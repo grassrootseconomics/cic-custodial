@@ -1,0 +1,29 @@
+basePath: /api
+info:
+  contact:
+    email: devops@grassecon.org
+    name: API Support
+    url: https://grassecon.org/pages/contact-us
+  description: Interact with CIC Custodial API
+  license:
+    name: AGPL-3.0
+    url: https://www.gnu.org/licenses/agpl-3.0.en.html
+  termsOfService: https://grassecon.org/pages/terms-and-conditions.html
+  title: CIC Custodial API
+  version: "1.0"
+paths:
+  /:
+    post:
+      consumes:
+      - '*/*'
+      description: Create a new custodial account.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Create a new custodial account.
+swagger: "2.0"
