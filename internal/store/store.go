@@ -21,6 +21,7 @@ type (
 		WriteKeyPair(context.Context, keypair.Key) (uint, error)
 		// Otx related actions.
 		CreateOtx(context.Context, Otx) (uint, error)
+		GetNextNonce(context.Context, string) (uint64, error)
 		GetTxStatus(context.Context, string) (txStatus, error)
 		CreateDispatchStatus(context.Context, uint, enum.OtxStatus) error
 		UpdateDispatchStatus(context.Context, bool, string, uint64) error
@@ -49,6 +50,7 @@ type (
 		LoadKeyPair  string `query:"load-key-pair"`
 		// Otx related queries.
 		CreateOTX               string `query:"create-otx"`
+		GetNextNonce            string `query:"get-next-nonce"`
 		GetTxStatusByTrackingId string `query:"get-tx-status-by-tracking-id"`
 		CreateDispatchStatus    string `query:"create-dispatch-status"`
 		UpdateDispatchStatus    string `query:"update-dispatch-status"`

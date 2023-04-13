@@ -61,6 +61,27 @@ func (s *PgStore) CreateOtx(
 	return id, nil
 }
 
+func (s *PgStore) GetNextNonce(
+	ctx context.Context,
+	publicAddress string,
+) (uint64, error) {
+	var (
+		lastNonce uint64
+	)
+
+	if err := s.db.QueryRow(
+		ctx,
+		s.queries.GetNextNonce,
+		publicAddress,
+	).Scan(
+		&lastNonce,
+	); err != nil {
+		return 0, err
+	}
+
+	return lastNonce, nil
+}
+
 func (s *PgStore) GetTxStatus(
 	ctx context.Context,
 	trackingId string,

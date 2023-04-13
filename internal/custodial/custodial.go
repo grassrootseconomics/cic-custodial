@@ -13,7 +13,6 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/grassrootseconomics/w3-celo-patch"
-	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/v9"
 )
@@ -56,22 +55,7 @@ func NewCustodial(o Opts) (*Custodial, error) {
 	}
 
 	_, err = o.Noncestore.Peek(ctx, o.SystemPublicKey)
-	if err == redis.Nil {
-		// TODO: Bootsrap from Postgres first
-		var networkNonce uint64
-
-		err := o.CeloProvider.Client.CallCtx(
-			ctx,
-			eth.Nonce(celoutils.HexToAddress(o.SystemPublicKey), nil).Returns(&networkNonce),
-		)
-		if err != nil {
-			return nil, err
-		}
-
-		if err := o.Noncestore.SetAccountNonce(ctx, o.SystemPublicKey, networkNonce); err != nil {
-			return nil, err
-		}
-	} else if err != nil {
+	if err != nil {
 		return nil, err
 	}
 

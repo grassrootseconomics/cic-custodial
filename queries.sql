@@ -34,6 +34,11 @@ INSERT INTO otx_sign(
     nonce
 ) VALUES($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING id
 
+--name: get-next-nonce
+-- Gets last nonce from the otx table for a particular address for bootstrapping purposes
+-- $1: public_key
+SELECT nonce + 1 AS nonce FROM otx_sign WHERE otx_sign.from = $1 ORDER BY created_at DESC LIMIT 1;
+
 --name: get-tx-status-by-tracking-id
 -- Gets tx status's from possible multiple txs with the same tracking_id
 -- $1: tracking_id

@@ -51,7 +51,7 @@ func main() {
 	redisPool := initCommonRedisPool()
 
 	store := initPgStore()
-	redisNoncestore := initRedisNoncestore(redisPool)
+	redisNoncestore := initRedisNoncestore(redisPool, celoProvider, store)
 	lockProvider := initLockProvider(redisPool.Client)
 	taskerClient := initTaskerClient(asynqRedisPool)
 

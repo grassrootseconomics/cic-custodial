@@ -110,9 +110,11 @@ func initCommonRedisPool() *redis.RedisPool {
 }
 
 // Load redis backed noncestore.
-func initRedisNoncestore(redisPool *redis.RedisPool) nonce.Noncestore {
+func initRedisNoncestore(redisPool *redis.RedisPool, chainProvider *celoutils.Provider, store store.Store) nonce.Noncestore {
 	return nonce.NewRedisNoncestore(nonce.Opts{
-		RedisPool: redisPool,
+		ChainProvider: chainProvider,
+		RedisPool:     redisPool,
+		Store:         store,
 	})
 }
 
