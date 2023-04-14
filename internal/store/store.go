@@ -22,7 +22,7 @@ type (
 		// Otx related actions.
 		CreateOtx(context.Context, Otx) (uint, error)
 		GetNextNonce(context.Context, string) (uint64, error)
-		GetTxStatus(context.Context, string) (txStatus, error)
+		GetTxStatus(context.Context, string) (TxStatus, error)
 		CreateDispatchStatus(context.Context, uint, enum.OtxStatus) error
 		UpdateDispatchStatus(context.Context, bool, string, uint64) error
 		// Account related actions.

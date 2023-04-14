@@ -22,7 +22,7 @@ type (
 		GasPrice      *big.Int
 		Nonce         uint64
 	}
-	txStatus struct {
+	TxStatus struct {
 		CreatedAt     time.Time `db:"created_at" json:"createdAt"`
 		Status        string    `db:"status" json:"status"`
 		TransferValue uint64    `db:"transfer_value" json:"transferValue"`
@@ -85,9 +85,9 @@ func (s *PgStore) GetNextNonce(
 func (s *PgStore) GetTxStatus(
 	ctx context.Context,
 	trackingId string,
-) (txStatus, error) {
+) (TxStatus, error) {
 	var (
-		tx txStatus
+		tx TxStatus
 	)
 
 	rows, err := s.db.Query(
