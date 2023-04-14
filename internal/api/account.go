@@ -13,12 +13,14 @@ import (
 )
 
 // HandleAccountCreate godoc
-// @Summary Create a new custodial account.
-// @Description Create a new custodial account.
-// @Accept */*
-// @Produce json
-// @Success 200 {object} map[string]interface{}
-// @Router / [post]
+//	@Summary		Create a new custodial account.
+//	@Description	Create a new custodial account.
+//	@Tags			account
+//	@Accept			*/*
+//	@Produce		json
+//	@Success		200	{object}	OkResp
+//	@Failure		500	{object}	ErrResp
+//	@Router			/account/create [post]
 func HandleAccountCreate(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		generatedKeyPair, err := keypair.Generate()

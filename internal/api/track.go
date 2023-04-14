@@ -7,11 +7,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// HandleTxStatus route.
-// GET: /api/track/:trackingId
-// Route param:
-// trackingId -> tracking UUID
-// Returns array of tx status.
+// HandleTrackTx godoc
+//	@Summary		Track an OTX (Origin transaction) status.
+//	@Description	Track an OTX (Origin transaction) status.
+//	@Tags			track
+//	@Accept			*/*
+//	@Produce		json
+//	@Param			trackingId	path		string	true	"Tracking Id"
+//	@Success		200			{object}	OkResp
+//	@Failure		400			{object}	ErrResp
+//	@Failure		500			{object}	ErrResp
+//	@Router			/track/{trackingId} [get]
 func HandleTrackTx(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		var (

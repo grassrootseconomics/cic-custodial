@@ -1,4 +1,22 @@
 basePath: /api
+definitions:
+  api.ErrResp:
+    properties:
+      message:
+        type: string
+      ok:
+        type: boolean
+    type: object
+  api.H:
+    additionalProperties: {}
+    type: object
+  api.OkResp:
+    properties:
+      ok:
+        type: boolean
+      result:
+        $ref: '#/definitions/api.H'
+    type: object
 info:
   contact:
     email: devops@grassecon.org
@@ -12,7 +30,7 @@ info:
   title: CIC Custodial API
   version: "1.0"
 paths:
-  /:
+  /account/create:
     post:
       consumes:
       - '*/*'
@@ -23,7 +41,109 @@ paths:
         "200":
           description: OK
           schema:
-            additionalProperties: true
-            type: object
+            $ref: '#/definitions/api.OkResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResp'
       summary: Create a new custodial account.
+      tags:
+      - account
+  /account/status/{address}:
+    get:
+      consumes:
+      - '*/*'
+      description: Return network balance and nonce.
+      parameters:
+      - description: Account Public Key
+        in: path
+        name: address
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.OkResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+      summary: Get an address's network balance and nonce.
+      tags:
+      - network
+  /sign/transfer:
+    post:
+      consumes:
+      - application/json
+      description: Sign and dispatch a transfer request.
+      parameters:
+      - description: Sign Transfer Request
+        in: body
+        name: signTransferRequest
+        required: true
+        schema:
+          properties:
+            amount:
+              type: integer
+            from:
+              type: string
+            to:
+              type: string
+            voucherAddress:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.OkResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+      summary: Sign and dispatch transfer request.
+      tags:
+      - network
+  /track/{trackingId}:
+    get:
+      consumes:
+      - '*/*'
+      description: Track an OTX (Origin transaction) status.
+      parameters:
+      - description: Tracking Id
+        in: path
+        name: trackingId
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.OkResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+      summary: Track an OTX (Origin transaction) status.
+      tags:
+      - track
 swagger: "2.0"

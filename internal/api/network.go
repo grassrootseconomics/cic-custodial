@@ -12,6 +12,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
+// HandleNetworkAccountStatus godoc
+//	@Summary		Get an address's network balance and nonce.
+//	@Description	Return network balance and nonce.
+//	@Tags			network
+//	@Accept			*/*
+//	@Produce		json
+//	@Param			address	path		string	true	"Account Public Key"
+//	@Success		200		{object}	OkResp
+//	@Failure		400		{object}	ErrResp
+//	@Failure		500		{object}	ErrResp
+//	@Router			/account/status/{address} [get]
 func HandleNetworkAccountStatus(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		var (

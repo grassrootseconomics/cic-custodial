@@ -12,15 +12,17 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-// HandleSignTransfer route.
-// POST: /api/sign/transfer
-// JSON Body:
-// from -> ETH address
-// to -> ETH address
-// voucherAddress -> ETH address
-// amount -> int (6 d.p. precision)
-// e.g. 1000000 = 1 VOUCHER
-// Returns the task id.
+// HandleSignTransfer godoc
+//	@Summary		Sign and dispatch transfer request.
+//	@Description	Sign and dispatch a transfer request.
+//	@Tags			network
+//	@Accept			json
+//	@Produce		json
+//	@Param			signTransferRequest	body		object{from=string,to=string,voucherAddress=string,amount=uint64}	true	"Sign Transfer Request"
+//	@Success		200					{object}	OkResp
+//	@Failure		400					{object}	ErrResp
+//	@Failure		500					{object}	ErrResp
+//	@Router			/sign/transfer [post]
 func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 	return func(c echo.Context) error {
 		var (

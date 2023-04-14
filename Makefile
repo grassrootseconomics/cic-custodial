@@ -11,6 +11,7 @@ build:
 	${BUILD_CONF} go build -ldflags="-X main.build=${BUILD_COMMIT} -s -w" -o ${BIN} cmd/service/*
 
 docs:
+	swag fmt --dir internal/api/
 	swag init --dir internal/api/ -g swagger.go
 
 run:
