@@ -13,7 +13,7 @@ require (
 	github.com/grassrootseconomics/w3-celo-patch v0.2.0
 	github.com/hibiken/asynq v0.24.0
 	github.com/jackc/pgx/v5 v5.3.1
-	github.com/jackc/tern/v2 v2.0.1
+	github.com/jackc/tern/v2 v2.1.0
 	github.com/knadh/goyesql/v2 v2.2.0
 	github.com/knadh/koanf/parsers/toml v0.1.0
 	github.com/knadh/koanf/providers/env v0.1.0
