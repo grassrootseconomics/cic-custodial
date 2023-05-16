@@ -12,6 +12,7 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
+	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/hibiken/asynq"
 )
 
@@ -26,8 +27,9 @@ type TransferPayload struct {
 func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
-			err     error
-			payload TransferPayload
+			err            error
+			networkBalance big.Int
+			payload        TransferPayload
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
@@ -105,7 +107,10 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			return err
 		}
 
-		if err := cu.Store.DecrGasQuota(ctx, payload.From); err != nil {
+		if err := cu.CeloProvider.Client.CallCtx(
+			ctx,
+			eth.Balance(celoutils.HexToAddress(payload.From), nil).Returns(&networkBalance),
+		); err != nil {
 			return err
 		}
 
@@ -137,16 +142,22 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			return err
 		}
 
-		_, err = cu.TaskerClient.CreateTask(
-			ctx,
-			tasker.AccountRefillGasTask,
-			tasker.DefaultPriority,
-			&tasker.Task{
-				Payload: gasRefillPayload,
-			},
-		)
-		if err != nil {
-			return err
+		if !balanceCheck(networkBalance) {
+			if err := cu.Store.GasLock(ctx, payload.From); err != nil {
+				return err
+			}
+
+			_, err = cu.TaskerClient.CreateTask(
+				ctx,
+				tasker.AccountRefillGasTask,
+				tasker.DefaultPriority,
+				&tasker.Task{
+					Payload: gasRefillPayload,
+				},
+			)
+			if err != nil {
+				return err
+			}
 		}
 
 		return nil

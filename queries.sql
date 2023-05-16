@@ -73,27 +73,24 @@ UPDATE otx_dispatch SET "status" = $2, "block" = $3 WHERE otx_dispatch.id = (
 UPDATE keystore SET active = true WHERE public_key=$1
 
 --name: get-account-status-by-address
--- Gets current gas quota for an individual account by address
+-- Gets current gas lock and activation status for an individual account by address
 -- $1: public_key
-SELECT keystore.active, gas_quota.quota FROM keystore
-INNER JOIN gas_quota ON keystore.id = gas_quota.key_id
+SELECT keystore.active, gas_lock.lock FROM keystore
+INNER JOIN gas_lock ON keystore.id = gas_lock.key_id
 WHERE keystore.public_key=$1
 
---name: decr-gas-quota
--- Consumes a gas quota
+--name: acc-gas-lock
+-- Locks an account for gas reasons
 -- $1: public_key
-UPDATE gas_quota SET quota = quota - 1 WHERE key_id = (
+UPDATE gas_lock SET lock = true WHERE key_id = (
     SELECT id FROM keystore
     WHERE public_key=$1    
 )
 
---name: reset-gas-quota
--- Resets the gas quota
--- 25 is the agreed upon quota
+--name: acc-gas-unlock
+-- Unlocks an account for gas reasons
 -- $1: public_key
-UPDATE gas_quota SET quota = gas_quota_meta.default_quota
-FROM gas_quota_meta
-WHERE key_id = (
+UPDATE gas_lock SET lock = false WHERE key_id = (
     SELECT id FROM keystore
     WHERE public_key=$1    
 )

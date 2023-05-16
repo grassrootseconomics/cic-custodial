@@ -60,6 +60,7 @@ func main() {
 	custodial, err := custodial.NewCustodial(custodial.Opts{
 		CeloProvider:     celoProvider,
 		LockProvider:     lockProvider,
+		Logg:             lo,
 		Noncestore:       redisNoncestore,
 		Store:            store,
 		RedisClient:      redisPool.Client,

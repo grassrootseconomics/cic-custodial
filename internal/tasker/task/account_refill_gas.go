@@ -35,16 +35,6 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			return err
 		}
 
-		_, gasQuota, err := cu.Store.GetAccountStatus(ctx, payload.PublicKey)
-		if err != nil {
-			return err
-		}
-
-		// The user has enough gas for atleast 5 more transactions.
-		if gasQuota > 5 {
-			return nil
-		}
-
 		if err := cu.CeloProvider.Client.CallCtx(
 			ctx,
 			eth.CallFunc(
@@ -56,8 +46,8 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 			return err
 		}
 
-		// The user already requested funds, there is a cooldown applied.
-		// We can schedule an attempt after the cooldown period has passed.
+		// The user recently requested funds, there is a cooldown applied.
+		// We can schedule an attempt after the cooldown period has passed + 10 seconds.
 		if nextTime.Int64() > time.Now().Unix() {
 			_, err = cu.TaskerClient.CreateTask(
 				ctx,
@@ -66,7 +56,7 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 				&tasker.Task{
 					Payload: t.Payload(),
 				},
-				asynq.ProcessAt(time.Unix(nextTime.Int64(), 0)),
+				asynq.ProcessAt(time.Unix(nextTime.Int64()+10, 0)),
 			)
 			if err != nil {
 				return err
@@ -130,6 +120,7 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 				InputData:       input,
 				GasFeeCap:       celoutils.SafeGasFeeCap,
 				GasTipCap:       celoutils.SafeGasTipCap,
+				GasLimit:        gasLimit,
 				Nonce:           nonce,
 			},
 		)

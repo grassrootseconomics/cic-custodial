@@ -15,12 +15,14 @@ import (
 	"github.com/grassrootseconomics/w3-celo-patch"
 	"github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/v9"
+	"github.com/zerodha/logf"
 )
 
 type (
 	Opts struct {
 		CeloProvider     *celoutils.Provider
 		LockProvider     *redislock.Client
+		Logg             logf.Logger
 		Noncestore       nonce.Noncestore
 		Store            store.Store
 		RedisClient      *redis.Client
@@ -54,10 +56,12 @@ func NewCustodial(o Opts) (*Custodial, error) {
 		return nil, err
 	}
 
-	_, err = o.Noncestore.Peek(ctx, o.SystemPublicKey)
+	systemNonce, err := o.Noncestore.Peek(ctx, o.SystemPublicKey)
 	if err != nil {
 		return nil, err
 	}
+
+	o.Logg.Info("custodial: loaded_nonce", "system_nonce", systemNonce)
 
 	privateKey, err := eth_crypto.HexToECDSA(o.SystemPrivateKey)
 	if err != nil {
