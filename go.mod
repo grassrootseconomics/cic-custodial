@@ -7,7 +7,7 @@ require (
 	github.com/bsm/redislock v0.9.3
 	github.com/celo-org/celo-blockchain v1.7.2
 	github.com/georgysavva/scany/v2 v2.0.0
-	github.com/go-playground/validator/v10 v10.12.0
+	github.com/go-playground/validator/v10 v10.13.0
 	github.com/google/uuid v1.3.0
 	github.com/grassrootseconomics/celoutils v1.2.1
 	github.com/grassrootseconomics/w3-celo-patch v0.2.0
@@ -77,7 +77,7 @@ require (
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
-	github.com/leodido/go-urn v1.2.2 // indirect
+	github.com/leodido/go-urn v1.2.3 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
