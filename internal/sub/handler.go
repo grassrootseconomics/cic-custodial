@@ -45,11 +45,11 @@ func (s *Sub) processEventHandler(ctx context.Context, msg *nats.Msg) error {
 				return err
 			}
 
-			if err := s.cu.Store.ResetGasQuota(ctx, chainEvent.To); err != nil {
+			if err := s.cu.Store.GasUnlock(ctx, chainEvent.To); err != nil {
 				return err
 			}
 		case "CHAIN.gas":
-			if err := s.cu.Store.ResetGasQuota(ctx, chainEvent.To); err != nil {
+			if err := s.cu.Store.GasUnlock(ctx, chainEvent.To); err != nil {
 				return err
 			}
 		}

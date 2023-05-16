@@ -27,10 +27,10 @@ type (
 		UpdateDispatchStatus(context.Context, bool, string, uint64) error
 		// Account related actions.
 		ActivateAccount(context.Context, string) error
-		GetAccountStatus(context.Context, string) (bool, int, error)
+		GetAccountStatus(context.Context, string) (bool, bool, error)
 		// Gas quota related actions.
-		DecrGasQuota(context.Context, string) error
-		ResetGasQuota(context.Context, string) error
+		GasLock(context.Context, string) error
+		GasUnlock(context.Context, string) error
 	}
 
 	Opts struct {
@@ -57,8 +57,8 @@ type (
 		// Account related queries.
 		ActivateAccount  string `query:"activate-account"`
 		GetAccountStatus string `query:"get-account-status-by-address"`
-		DecrGasQuota     string `query:"decr-gas-quota"`
-		ResetGasQuota    string `query:"reset-gas-quota"`
+		GasLock          string `query:"acc-gas-lock"`
+		GasUnlock        string `query:"acc-gas-unlock"`
 	}
 )
 

@@ -13,6 +13,7 @@ import (
 )
 
 // HandleSignTransfer godoc
+//
 //	@Summary		Sign and dispatch transfer request.
 //	@Description	Sign and dispatch a transfer request.
 //	@Tags			network
@@ -42,7 +43,7 @@ func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 			return err
 		}
 
-		accountActive, gasQuota, err := cu.Store.GetAccountStatus(c.Request().Context(), req.From)
+		accountActive, gasLock, err := cu.Store.GetAccountStatus(c.Request().Context(), req.From)
 		if err != nil {
 			return err
 		}
@@ -54,35 +55,14 @@ func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 			})
 		}
 
-		trackingId := uuid.NewString()
-
-		if gasQuota < 1 {
-			gasRefillPayload, err := json.Marshal(task.AccountPayload{
-				PublicKey:  req.From,
-				TrackingId: trackingId,
-			})
-			if err != nil {
-				return err
-			}
-
-			_, err = cu.TaskerClient.CreateTask(
-				c.Request().Context(),
-				tasker.AccountRefillGasTask,
-				tasker.DefaultPriority,
-				&tasker.Task{
-					Id:      trackingId,
-					Payload: gasRefillPayload,
-				},
-			)
-			if err != nil {
-				return err
-			}
-
+		if gasLock {
 			return c.JSON(http.StatusForbidden, ErrResp{
 				Ok:      false,
-				Message: "Out of gas, refill pending. Try again later.",
+				Message: "Gas lock. Gas balance unavailable. Try again later.",
 			})
 		}
+
+		trackingId := uuid.NewString()
 
 		taskPayload, err := json.Marshal(task.TransferPayload{
 			TrackingId:     trackingId,

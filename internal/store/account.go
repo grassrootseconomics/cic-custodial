@@ -22,10 +22,10 @@ func (s *PgStore) ActivateAccount(
 func (s *PgStore) GetAccountStatus(
 	ctx context.Context,
 	publicAddress string,
-) (bool, int, error) {
+) (bool, bool, error) {
 	var (
 		accountActive bool
-		gasQuota      int
+		gasLock       bool
 	)
 
 	if err := s.db.QueryRow(
@@ -34,21 +34,21 @@ func (s *PgStore) GetAccountStatus(
 		publicAddress,
 	).Scan(
 		&accountActive,
-		&gasQuota,
+		&gasLock,
 	); err != nil {
-		return false, 0, err
+		return false, false, err
 	}
 
-	return accountActive, gasQuota, nil
+	return accountActive, gasLock, nil
 }
 
-func (s *PgStore) DecrGasQuota(
+func (s *PgStore) GasLock(
 	ctx context.Context,
 	publicAddress string,
 ) error {
 	if _, err := s.db.Exec(
 		ctx,
-		s.queries.DecrGasQuota,
+		s.queries.GasLock,
 		publicAddress,
 	); err != nil {
 		return err
@@ -57,13 +57,13 @@ func (s *PgStore) DecrGasQuota(
 	return nil
 }
 
-func (s *PgStore) ResetGasQuota(
+func (s *PgStore) GasUnlock(
 	ctx context.Context,
 	publicAddress string,
 ) error {
 	if _, err := s.db.Exec(
 		ctx,
-		s.queries.ResetGasQuota,
+		s.queries.GasUnlock,
 		publicAddress,
 	); err != nil {
 		return err

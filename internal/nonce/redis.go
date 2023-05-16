@@ -37,13 +37,17 @@ func NewRedisNoncestore(o Opts) Noncestore {
 
 func (n *RedisNoncestore) Peek(ctx context.Context, publicKey string) (uint64, error) {
 	nonce, err := n.redis.Client.Get(ctx, publicKey).Uint64()
-	if err == redis.Nil {
-		nonce, err = n.bootstrap(ctx, publicKey)
-		if err != nil {
+	if err != nil {
+		if err == redis.Nil {
+			nonce, err = n.bootstrap(ctx, publicKey)
+			if err != nil {
+				return 0, err
+			}
+
+			return nonce, nil
+		} else {
 			return 0, err
 		}
-	} else if err != nil {
-		return 0, err
 	}
 
 	return nonce, nil
@@ -55,13 +59,15 @@ func (n *RedisNoncestore) Acquire(ctx context.Context, publicKey string) (uint64
 	)
 
 	nonce, err := n.redis.Client.Get(ctx, publicKey).Uint64()
-	if err == redis.Nil {
-		nonce, err = n.bootstrap(ctx, publicKey)
-		if err != nil {
+	if err != nil {
+		if err == redis.Nil {
+			nonce, err = n.bootstrap(ctx, publicKey)
+			if err != nil {
+				return 0, err
+			}
+		} else {
 			return 0, err
 		}
-	} else if err != nil {
-		return 0, err
 	}
 
 	err = n.redis.Client.Incr(ctx, publicKey).Err()
