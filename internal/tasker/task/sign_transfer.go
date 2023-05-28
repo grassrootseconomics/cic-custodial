@@ -78,7 +78,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 				InputData:       input,
 				GasFeeCap:       celoutils.SafeGasFeeCap,
 				GasTipCap:       celoutils.SafeGasTipCap,
-				GasLimit:        gasLimit,
+				GasLimit:        uint64(celoutils.SafeGasLimit),
 				Nonce:           nonce,
 			},
 		)

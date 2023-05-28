@@ -9,7 +9,7 @@ require (
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-playground/validator/v10 v10.13.0
 	github.com/google/uuid v1.3.0
-	github.com/grassrootseconomics/celoutils v1.2.1
+	github.com/grassrootseconomics/celoutils v1.3.0
 	github.com/grassrootseconomics/w3-celo-patch v0.2.0
 	github.com/hibiken/asynq v0.24.0
 	github.com/jackc/pgx/v5 v5.3.1

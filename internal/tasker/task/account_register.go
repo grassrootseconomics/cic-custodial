@@ -69,7 +69,7 @@ func AccountRegisterOnChainProcessor(cu *custodial.Custodial) func(context.Conte
 				InputData:       input,
 				GasFeeCap:       celoutils.SafeGasFeeCap,
 				GasTipCap:       celoutils.SafeGasTipCap,
-				GasLimit:        gasLimit,
+				GasLimit:        uint64(celoutils.SafeGasLimit),
 				Nonce:           nonce,
 			},
 		)

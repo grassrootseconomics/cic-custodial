@@ -120,7 +120,7 @@ func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *a
 				InputData:       input,
 				GasFeeCap:       celoutils.SafeGasFeeCap,
 				GasTipCap:       celoutils.SafeGasTipCap,
-				GasLimit:        gasLimit,
+				GasLimit:        uint64(celoutils.SafeGasLimit),
 				Nonce:           nonce,
 			},
 		)

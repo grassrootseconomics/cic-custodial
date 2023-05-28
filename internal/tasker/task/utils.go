@@ -8,8 +8,6 @@ import (
 )
 
 const (
-	gasLimit = 250000
-
 	lockPrefix     = "lock:"
 	lockRetryDelay = 25 * time.Millisecond
 	lockTimeout    = 1 * time.Second
