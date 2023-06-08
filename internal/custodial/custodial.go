@@ -13,7 +13,6 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/util"
 	"github.com/grassrootseconomics/w3-celo-patch"
-	"github.com/labstack/gommon/log"
 	"github.com/redis/go-redis/v9"
 	"github.com/zerodha/logf"
 )
@@ -36,6 +35,7 @@ type (
 		Abis             map[string]*w3.Func
 		CeloProvider     *celoutils.Provider
 		LockProvider     *redislock.Client
+		Logg             logf.Logger
 		Noncestore       nonce.Noncestore
 		Store            store.Store
 		RedisClient      *redis.Client
@@ -52,7 +52,7 @@ func NewCustodial(o Opts) (*Custodial, error) {
 
 	registryMap, err := o.CeloProvider.RegistryMap(ctx, celoutils.HexToAddress(o.RegistryAddress))
 	if err != nil {
-		log.Errorf("err: %v", err)
+		o.Logg.Error("custodial: critical error loading contracts from registry: %v", err)
 		return nil, err
 	}
 
@@ -72,6 +72,7 @@ func NewCustodial(o Opts) (*Custodial, error) {
 		Abis:             initAbis(),
 		CeloProvider:     o.CeloProvider,
 		LockProvider:     o.LockProvider,
+		Logg:             o.Logg,
 		Noncestore:       o.Noncestore,
 		Store:            o.Store,
 		RedisClient:      o.RedisClient,
