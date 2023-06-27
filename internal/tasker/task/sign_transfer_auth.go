@@ -12,24 +12,21 @@ import (
 	"github.com/grassrootseconomics/cic-custodial/internal/store"
 	"github.com/grassrootseconomics/cic-custodial/internal/tasker"
 	"github.com/grassrootseconomics/cic-custodial/pkg/enum"
-	"github.com/grassrootseconomics/w3-celo-patch/module/eth"
 	"github.com/hibiken/asynq"
 )
 
-type TransferPayload struct {
-	TrackingId     string `json:"trackingId"`
-	From           string `json:"from" `
-	To             string `json:"to"`
-	VoucherAddress string `json:"voucherAddress"`
-	Amount         uint64 `json:"amount"`
+type TransferAuthPayload struct {
+	AuthorizedAddress string `json:"authorizedAddress"`
+	AuthorizedAmount  uint64 `json:"authorizedAmount"`
+	TrackingId        string `json:"trackingId"`
+	VoucherAddress    string `json:"voucherAddress"`
 }
 
-func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
+func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
-			err            error
-			networkBalance big.Int
-			payload        TransferPayload
+			err     error
+			payload TransferAuthPayload
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
@@ -38,7 +35,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			lockPrefix+payload.From,
+			lockPrefix+cu.SystemPublicKey,
 			lockTimeout,
 			&redislock.Options{
 				RetryStrategy: lockRetry(),
@@ -49,12 +46,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 		defer lock.Release(ctx)
 
-		key, err := cu.Store.LoadPrivateKey(ctx, payload.From)
-		if err != nil {
-			return err
-		}
-
-		nonce, err := cu.Noncestore.Acquire(ctx, payload.From)
+		nonce, err := cu.Noncestore.Acquire(ctx, cu.SystemPublicKey)
 		if err != nil {
 			return err
 		}
@@ -66,16 +58,16 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			}
 		}()
 
-		input, err := cu.Abis[custodial.Transfer].EncodeArgs(
-			celoutils.HexToAddress(payload.To),
-			new(big.Int).SetUint64(payload.Amount),
+		input, err := cu.Abis[custodial.Approve].EncodeArgs(
+			celoutils.HexToAddress(payload.AuthorizedAddress),
+			new(big.Int).SetUint64(payload.AuthorizedAmount),
 		)
 		if err != nil {
 			return err
 		}
 
 		builtTx, err := cu.CeloProvider.SignContractExecutionTx(
-			key,
+			cu.SystemPrivateKey,
 			celoutils.ContractExecutionTxOpts{
 				ContractAddress: celoutils.HexToAddress(payload.VoucherAddress),
 				InputData:       input,
@@ -96,24 +88,17 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 
 		id, err := cu.Store.CreateOtx(ctx, store.Otx{
 			TrackingId:    payload.TrackingId,
-			Type:          enum.TRANSFER_VOUCHER,
+			Type:          enum.TRANSFER_AUTH,
 			RawTx:         hexutil.Encode(rawTx),
 			TxHash:        builtTx.Hash().Hex(),
-			From:          payload.From,
+			From:          cu.SystemPublicKey,
 			Data:          hexutil.Encode(builtTx.Data()),
 			GasPrice:      builtTx.GasPrice(),
 			GasLimit:      builtTx.Gas(),
-			TransferValue: payload.Amount,
+			TransferValue: 0,
 			Nonce:         builtTx.Nonce(),
 		})
 		if err != nil {
-			return err
-		}
-
-		if err := cu.CeloProvider.Client.CallCtx(
-			ctx,
-			eth.Balance(celoutils.HexToAddress(payload.From), nil).Returns(&networkBalance),
-		); err != nil {
 			return err
 		}
 
@@ -135,32 +120,6 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		)
 		if err != nil {
 			return err
-		}
-
-		gasRefillPayload, err := json.Marshal(AccountPayload{
-			PublicKey:  payload.From,
-			TrackingId: payload.TrackingId,
-		})
-		if err != nil {
-			return err
-		}
-
-		if !balanceCheck(networkBalance) {
-			if err := cu.Store.GasLock(ctx, payload.From); err != nil {
-				return err
-			}
-
-			_, err = cu.TaskerClient.CreateTask(
-				ctx,
-				tasker.AccountRefillGasTask,
-				tasker.DefaultPriority,
-				&tasker.Task{
-					Payload: gasRefillPayload,
-				},
-			)
-			if err != nil {
-				return err
-			}
 		}
 
 		return nil
