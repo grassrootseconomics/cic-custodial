@@ -17,10 +17,6 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-const (
-	gasGiveToLimit = 250000
-)
-
 func AccountRefillGasProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (

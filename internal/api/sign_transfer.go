@@ -31,7 +31,7 @@ func HandleSignTransfer(cu *custodial.Custodial) func(echo.Context) error {
 				From           string `json:"from" validate:"required,eth_addr_checksum"`
 				To             string `json:"to" validate:"required,eth_addr_checksum"`
 				VoucherAddress string `json:"voucherAddress" validate:"required,eth_addr_checksum"`
-				Amount         uint64 `json:"amount" validate:"required"`
+				Amount         uint64 `json:"amount" validate:"gt=0"`
 			}
 		)
 

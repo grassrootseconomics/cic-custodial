@@ -4,9 +4,9 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
+	"time"
 
 	"github.com/bsm/redislock"
-	"github.com/celo-org/celo-blockchain/accounts/abi"
 	"github.com/celo-org/celo-blockchain/common/hexutil"
 	"github.com/grassrootseconomics/celoutils"
 	"github.com/grassrootseconomics/cic-custodial/internal/custodial"
@@ -18,9 +18,9 @@ import (
 )
 
 type TransferAuthPayload struct {
-	AuthorizeFor      string `json:"authorizeFor"`
+	Amount            uint64 `json:"amount"`
+	Authorizer        string `json:"authorizer"`
 	AuthorizedAddress string `json:"authorizedAddress"`
-	Revoke            bool   `json:"revoke"`
 	TrackingId        string `json:"trackingId"`
 	VoucherAddress    string `json:"voucherAddress"`
 }
@@ -39,7 +39,7 @@ func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Co
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			lockPrefix+payload.AuthorizeFor,
+			lockPrefix+payload.Authorizer,
 			lockTimeout,
 			&redislock.Options{
 				RetryStrategy: lockRetry(),
@@ -50,31 +50,26 @@ func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Co
 		}
 		defer lock.Release(ctx)
 
-		key, err := cu.Store.LoadPrivateKey(ctx, payload.AuthorizeFor)
+		key, err := cu.Store.LoadPrivateKey(ctx, payload.Authorizer)
 		if err != nil {
 			return err
 		}
 
-		nonce, err := cu.Noncestore.Acquire(ctx, payload.AuthorizeFor)
+		nonce, err := cu.Noncestore.Acquire(ctx, payload.Authorizer)
 		if err != nil {
 			return err
 		}
 		defer func() {
 			if err != nil {
-				if nErr := cu.Noncestore.Return(ctx, payload.AuthorizeFor); nErr != nil {
+				if nErr := cu.Noncestore.Return(ctx, payload.Authorizer); nErr != nil {
 					err = nErr
 				}
 			}
 		}()
 
-		authorizeAmount := big.NewInt(0).Sub(abi.MaxUint256, big.NewInt(1))
-		if payload.Revoke {
-			authorizeAmount = big.NewInt(0)
-		}
-
 		input, err := cu.Abis[custodial.Approve].EncodeArgs(
 			celoutils.HexToAddress(payload.AuthorizedAddress),
-			authorizeAmount,
+			new(big.Int).SetUint64(payload.Amount),
 		)
 		if err != nil {
 			return err
@@ -118,7 +113,7 @@ func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Co
 
 		if err := cu.CeloProvider.Client.CallCtx(
 			ctx,
-			eth.Balance(celoutils.HexToAddress(payload.AuthorizeFor), nil).Returns(&networkBalance),
+			eth.Balance(celoutils.HexToAddress(payload.Authorizer), nil).Returns(&networkBalance),
 		); err != nil {
 			return err
 		}
@@ -143,8 +138,36 @@ func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Co
 			return err
 		}
 
+		// Auto-revoke every session (15 min)
+		// Check if already a revoke request
+		if payload.Amount > 0 {
+			taskPayload, err := json.Marshal(TransferAuthPayload{
+				TrackingId:        payload.TrackingId,
+				Amount:            0,
+				Authorizer:        payload.Authorizer,
+				AuthorizedAddress: payload.AuthorizedAddress,
+				VoucherAddress:    payload.VoucherAddress,
+			})
+			if err != nil {
+				return err
+			}
+
+			_, err = cu.TaskerClient.CreateTask(
+				ctx,
+				tasker.SignTransferTaskAuth,
+				tasker.DefaultPriority,
+				&tasker.Task{
+					Payload: taskPayload,
+				},
+				asynq.ProcessIn(time.Minute*15),
+			)
+			if err != nil {
+				return err
+			}
+		}
+
 		gasRefillPayload, err := json.Marshal(AccountPayload{
-			PublicKey:  payload.AuthorizeFor,
+			PublicKey:  payload.Authorizer,
 			TrackingId: payload.TrackingId,
 		})
 		if err != nil {
@@ -152,7 +175,7 @@ func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Co
 		}
 
 		if !balanceCheck(networkBalance) {
-			if err := cu.Store.GasLock(ctx, payload.AuthorizeFor); err != nil {
+			if err := cu.Store.GasLock(ctx, payload.Authorizer); err != nil {
 				return err
 			}
 
