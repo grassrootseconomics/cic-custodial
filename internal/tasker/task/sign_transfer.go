@@ -60,7 +60,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 		defer func() {
 			if err != nil {
-				if nErr := cu.Noncestore.Return(ctx, cu.SystemPublicKey); nErr != nil {
+				if nErr := cu.Noncestore.Return(ctx, payload.From); nErr != nil {
 					err = nErr
 				}
 			}
