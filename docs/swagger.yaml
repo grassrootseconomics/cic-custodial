@@ -117,6 +117,45 @@ paths:
       summary: Sign and dispatch transfer request.
       tags:
       - network
+  /sign/transferAuth:
+    post:
+      consumes:
+      - application/json
+      description: Sign and dispatch a transfer authorization (approve) request.
+      parameters:
+      - description: Sign Transfer Authorization (approve) Request
+        in: body
+        name: signTransferAuthorzationRequest
+        required: true
+        schema:
+          properties:
+            amount:
+              type: integer
+            authorizedAddress:
+              type: string
+            authorizer:
+              type: string
+            voucherAddress:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.OkResp'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/api.ErrResp'
+      summary: Sign and dispatch a transfer authorization (approve) request.
+      tags:
+      - network
   /track/{trackingId}:
     get:
       consumes:

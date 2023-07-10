@@ -3,6 +3,7 @@ package custodial
 import (
 	"context"
 	"crypto/ecdsa"
+	"time"
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common"
@@ -19,6 +20,7 @@ import (
 
 type (
 	Opts struct {
+		ApprovalTimeout  time.Duration
 		CeloProvider     *celoutils.Provider
 		LockProvider     *redislock.Client
 		Logg             logf.Logger
@@ -32,6 +34,7 @@ type (
 	}
 
 	Custodial struct {
+		ApprovalTimeout  time.Duration
 		Abis             map[string]*w3.Func
 		CeloProvider     *celoutils.Provider
 		LockProvider     *redislock.Client
@@ -69,6 +72,7 @@ func NewCustodial(o Opts) (*Custodial, error) {
 	}
 
 	return &Custodial{
+		ApprovalTimeout:  o.ApprovalTimeout,
 		Abis:             initAbis(),
 		CeloProvider:     o.CeloProvider,
 		LockProvider:     o.LockProvider,

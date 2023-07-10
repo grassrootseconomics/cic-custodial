@@ -1,0 +1,1 @@
+INSERT INTO otx_tx_type (value) VALUES ('TRANSFER_AUTHORIZATION');

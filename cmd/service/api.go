@@ -50,6 +50,7 @@ func initApiServer(custodialContainer *custodial.Custodial) *echo.Echo {
 	apiRoute.POST("/account/create", api.HandleAccountCreate(custodialContainer))
 	apiRoute.GET("/account/status/:address", api.HandleNetworkAccountStatus(custodialContainer))
 	apiRoute.POST("/sign/transfer", api.HandleSignTransfer(custodialContainer))
+	apiRoute.POST("/sign/transferAuth", api.HandleSignTranserAuthorization(custodialContainer))
 	apiRoute.GET("/track/:trackingId", api.HandleTrackTx(custodialContainer))
 
 	return server

@@ -18,6 +18,7 @@ const (
 	AccountRegisterTask  TaskName = "sys:register_account"
 	AccountRefillGasTask TaskName = "sys:refill_gas"
 	SignTransferTask     TaskName = "usr:sign_transfer"
+	SignTransferTaskAuth TaskName = "usr:sign_transfer_auth"
 	DispatchTxTask       TaskName = "rpc:dispatch"
 )
 

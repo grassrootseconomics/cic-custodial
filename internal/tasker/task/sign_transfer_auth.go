@@ -16,20 +16,20 @@ import (
 	"github.com/hibiken/asynq"
 )
 
-type TransferPayload struct {
-	TrackingId     string `json:"trackingId"`
-	From           string `json:"from" `
-	To             string `json:"to"`
-	VoucherAddress string `json:"voucherAddress"`
-	Amount         uint64 `json:"amount"`
+type TransferAuthPayload struct {
+	Amount            uint64 `json:"amount"`
+	Authorizer        string `json:"authorizer"`
+	AuthorizedAddress string `json:"authorizedAddress"`
+	TrackingId        string `json:"trackingId"`
+	VoucherAddress    string `json:"voucherAddress"`
 }
 
-func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
+func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Context, *asynq.Task) error {
 	return func(ctx context.Context, t *asynq.Task) error {
 		var (
 			err            error
 			networkBalance big.Int
-			payload        TransferPayload
+			payload        TransferAuthPayload
 		)
 
 		if err := json.Unmarshal(t.Payload(), &payload); err != nil {
@@ -38,7 +38,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 
 		lock, err := cu.LockProvider.Obtain(
 			ctx,
-			lockPrefix+payload.From,
+			lockPrefix+payload.Authorizer,
 			lockTimeout,
 			&redislock.Options{
 				RetryStrategy: lockRetry(),
@@ -49,25 +49,25 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 		defer lock.Release(ctx)
 
-		key, err := cu.Store.LoadPrivateKey(ctx, payload.From)
+		key, err := cu.Store.LoadPrivateKey(ctx, payload.Authorizer)
 		if err != nil {
 			return err
 		}
 
-		nonce, err := cu.Noncestore.Acquire(ctx, payload.From)
+		nonce, err := cu.Noncestore.Acquire(ctx, payload.Authorizer)
 		if err != nil {
 			return err
 		}
 		defer func() {
 			if err != nil {
-				if nErr := cu.Noncestore.Return(ctx, payload.From); nErr != nil {
+				if nErr := cu.Noncestore.Return(ctx, payload.Authorizer); nErr != nil {
 					err = nErr
 				}
 			}
 		}()
 
-		input, err := cu.Abis[custodial.Transfer].EncodeArgs(
-			celoutils.HexToAddress(payload.To),
+		input, err := cu.Abis[custodial.Approve].EncodeArgs(
+			celoutils.HexToAddress(payload.AuthorizedAddress),
 			new(big.Int).SetUint64(payload.Amount),
 		)
 		if err != nil {
@@ -96,14 +96,14 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 
 		id, err := cu.Store.CreateOtx(ctx, store.Otx{
 			TrackingId:    payload.TrackingId,
-			Type:          enum.TRANSFER_VOUCHER,
+			Type:          enum.TRANSFER_AUTH,
 			RawTx:         hexutil.Encode(rawTx),
 			TxHash:        builtTx.Hash().Hex(),
-			From:          payload.From,
+			From:          cu.SystemPublicKey,
 			Data:          hexutil.Encode(builtTx.Data()),
 			GasPrice:      builtTx.GasPrice(),
 			GasLimit:      builtTx.Gas(),
-			TransferValue: payload.Amount,
+			TransferValue: 0,
 			Nonce:         builtTx.Nonce(),
 		})
 		if err != nil {
@@ -112,7 +112,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 
 		if err := cu.CeloProvider.Client.CallCtx(
 			ctx,
-			eth.Balance(celoutils.HexToAddress(payload.From), nil).Returns(&networkBalance),
+			eth.Balance(celoutils.HexToAddress(payload.Authorizer), nil).Returns(&networkBalance),
 		); err != nil {
 			return err
 		}
@@ -137,8 +137,36 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 			return err
 		}
 
+		// Auto-revoke every session (15 min)
+		// Check if already a revoke request
+		if payload.Amount > 0 {
+			taskPayload, err := json.Marshal(TransferAuthPayload{
+				TrackingId:        payload.TrackingId,
+				Amount:            0,
+				Authorizer:        payload.Authorizer,
+				AuthorizedAddress: payload.AuthorizedAddress,
+				VoucherAddress:    payload.VoucherAddress,
+			})
+			if err != nil {
+				return err
+			}
+
+			_, err = cu.TaskerClient.CreateTask(
+				ctx,
+				tasker.SignTransferTaskAuth,
+				tasker.DefaultPriority,
+				&tasker.Task{
+					Payload: taskPayload,
+				},
+				asynq.ProcessIn(cu.ApprovalTimeout),
+			)
+			if err != nil {
+				return err
+			}
+		}
+
 		gasRefillPayload, err := json.Marshal(AccountPayload{
-			PublicKey:  payload.From,
+			PublicKey:  payload.Authorizer,
 			TrackingId: payload.TrackingId,
 		})
 		if err != nil {
@@ -146,7 +174,7 @@ func SignTransfer(cu *custodial.Custodial) func(context.Context, *asynq.Task) er
 		}
 
 		if !balanceCheck(networkBalance) {
-			if err := cu.Store.GasLock(ctx, payload.From); err != nil {
+			if err := cu.Store.GasLock(ctx, payload.Authorizer); err != nil {
 				return err
 			}
 

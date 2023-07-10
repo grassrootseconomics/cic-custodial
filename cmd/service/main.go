@@ -58,6 +58,7 @@ func main() {
 	natsConn, jsCtx := initJetStream()
 
 	custodial, err := custodial.NewCustodial(custodial.Opts{
+		ApprovalTimeout:  ko.MustDuration("system.approve_timeout"),
 		CeloProvider:     celoProvider,
 		LockProvider:     lockProvider,
 		Logg:             lo,

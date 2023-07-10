@@ -158,6 +158,66 @@ const docTemplate = `{
                 }
             }
         },
+        "/sign/transferAuth": {
+            "post": {
+                "description": "Sign and dispatch a transfer authorization (approve) request.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "network"
+                ],
+                "summary": "Sign and dispatch a transfer authorization (approve) request.",
+                "parameters": [
+                    {
+                        "description": "Sign Transfer Authorization (approve) Request",
+                        "name": "signTransferAuthorzationRequest",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "object",
+                            "properties": {
+                                "amount": {
+                                    "type": "integer"
+                                },
+                                "authorizedAddress": {
+                                    "type": "string"
+                                },
+                                "authorizer": {
+                                    "type": "string"
+                                },
+                                "voucherAddress": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.OkResp"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResp"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/api.ErrResp"
+                        }
+                    }
+                }
+            }
+        },
         "/track/{trackingId}": {
             "get": {
                 "description": "Track an OTX (Origin transaction) status.",
@@ -243,6 +303,8 @@ var SwaggerInfo = &swag.Spec{
 	Description:      "Interact with CIC Custodial API",
 	InfoInstanceName: "swagger",
 	SwaggerTemplate:  docTemplate,
+	LeftDelim:        "{{",
+	RightDelim:       "}}",
 }
 
 func init() {
