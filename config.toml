@@ -13,6 +13,7 @@ registry_address = ""
 [system]
 private_key = ""
 public_key  = ""
+approve_timeout = "30m"
 
 [postgres]
 dsn = ""

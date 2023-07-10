@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"math/big"
-	"time"
 
 	"github.com/bsm/redislock"
 	"github.com/celo-org/celo-blockchain/common/hexutil"
@@ -159,7 +158,7 @@ func SignTransferAuthorizationProcessor(cu *custodial.Custodial) func(context.Co
 				&tasker.Task{
 					Payload: taskPayload,
 				},
-				asynq.ProcessIn(time.Minute*15),
+				asynq.ProcessIn(cu.ApprovalTimeout),
 			)
 			if err != nil {
 				return err
