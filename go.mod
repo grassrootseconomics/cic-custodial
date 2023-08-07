@@ -12,7 +12,7 @@ require (
 	github.com/grassrootseconomics/celoutils v1.4.0
 	github.com/grassrootseconomics/w3-celo-patch v0.2.0
 	github.com/hibiken/asynq v0.24.0
-	github.com/jackc/pgx/v5 v5.4.0
+	github.com/jackc/pgx/v5 v5.4.3
 	github.com/jackc/tern/v2 v2.1.1
 	github.com/knadh/goyesql/v2 v2.2.0
 	github.com/knadh/koanf/parsers/toml v0.1.0
@@ -73,7 +73,7 @@ require (
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
-	github.com/jackc/puddle/v2 v2.2.0 // indirect
+	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/klauspost/compress v1.16.5 // indirect
