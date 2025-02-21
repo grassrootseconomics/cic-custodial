@@ -281,6 +281,8 @@ github.com/grassrootseconomics/celoutils v1.4.0 h1:AJNKiOpfnQqZ3kRxeUlhWH/zlDDjh
 github.com/grassrootseconomics/celoutils v1.4.0/go.mod h1:Uo5YRy6AGLAHDZj9jaOI+AWoQ1H3L0v79728pPMkm9Q=
 github.com/grassrootseconomics/celoutils v1.4.1-0.20240824053735-9873e8ac0473 h1:caDCYYMKi7TEl00mlV7Vl2lTcsrD7hoFcQwXCec9Ztc=
 github.com/grassrootseconomics/celoutils v1.4.1-0.20240824053735-9873e8ac0473/go.mod h1:Uo5YRy6AGLAHDZj9jaOI+AWoQ1H3L0v79728pPMkm9Q=
+github.com/grassrootseconomics/celoutils v1.4.1-0.20250221123515-f25baeeb2f8c h1:HrCc3I59rA9wha2QkJe+vs9vF1r+uKDbxUrM/EFCJdk=
+github.com/grassrootseconomics/celoutils v1.4.1-0.20250221123515-f25baeeb2f8c/go.mod h1:Uo5YRy6AGLAHDZj9jaOI+AWoQ1H3L0v79728pPMkm9Q=
 github.com/grassrootseconomics/w3-celo-patch v0.2.0 h1:YqibbPzX0tQKmxU1nUGzThPKk/fiYeYZY6Aif3eyu8U=
 github.com/grassrootseconomics/w3-celo-patch v0.2.0/go.mod h1:WhBXNzNIvHmS6B2hAeShs56oa9Azb4jQSrOMKuMdBWw=
 github.com/hashicorp/go-bexpr v0.1.10/go.mod h1:oxlubA2vC/gFVfX1A6JGp7ls7uCDlfJn732ehYYg+g0=
