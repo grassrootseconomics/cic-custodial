@@ -19,7 +19,9 @@ var (
 	// minGasBalanceRequired is optimistic that the immidiate next transfer request will be successful
 	// but the subsequent one could fail (though low probability), therefore we can trigger a gas lock.
 	// Therefore our system wide threshold is 0.01 CELO or 10000000000000000 gas units
-	minGasBalanceRequired = big.NewInt(20000000000 * 250000 * 2)
+	// UPDATE: Feb 2025
+	// 0.04455 CELO
+	minGasBalanceRequired = big.NewInt(27000000000 * 550000 * 3)
 )
 
 // lockRetry will at most try to obtain the lock 20 times within ~0.5s.
