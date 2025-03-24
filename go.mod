@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/VictoriaMetrics/metrics v1.24.0
-	github.com/bsm/redislock v0.9.3
+	github.com/bsm/redislock v0.9.4
 	github.com/celo-org/celo-blockchain v1.7.2
 	github.com/georgysavva/scany/v2 v2.0.0
 	github.com/go-playground/validator/v10 v10.14.1
